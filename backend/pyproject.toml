@@ -1,0 +1,9 @@
+[project]
+name = "clause-backend"
+version = "0.1.0"
+description = "Clause: plain-English answers about confusing documents, with receipts"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
