@@ -2,6 +2,8 @@
 
 **Plain-English answers about confusing documents — with receipts.**
 
+## What it does
+
 Upload a lease, a contract, a terms of service, an insurance policy, or a
 product manual, and ask questions the way you'd ask a friend: *"What am I
 actually agreeing to?"*, *"Can my landlord charge me for this?"*, *"How do I
@@ -10,7 +12,12 @@ the **exact clause and page** it came from. Click a citation and the source
 text lights up in the document viewer.
 
 And when the answer isn't in the document, Clause says
-**"I couldn't find that in this document"** — it never guesses.
+**"I couldn't find that in this document"** — it never guesses. That's the
+whole point: see [why below](#why-cite-the-exact-clause-never-guess-is-the-whole-point).
+
+Clause also has a proactive **red-flags scan** that checks a document for the
+clauses people most often get burned by, without you having to know what to
+ask. See [Red-flags scan](#red-flags-scan) below.
 
 ```
 ┌─────────────────────────────┬──────────────────────────────┐
@@ -136,9 +143,9 @@ termination, arbitration and legal rights, liability and warranty, changes to
 the terms, data and privacy) and reports each match **with the exact clause it
 came from**.
 
-It reuses the same grounding machinery as ask, so the "never guess" contract
-still holds: each risk category is a retrieval query, only chunks that clear
-the relevance gate are candidates, and — with an LLM — a flag is dropped if its
+It reuses the same safety checks as ask, so the "never guess" rule still
+holds: each risk category is a retrieval query, only chunks that clear the
+relevance gate are candidates, and — with an LLM — a flag is dropped if its
 citation doesn't map to a real excerpt. Same as answers: no receipts, no flag.
 
 The scan runs in whichever mode the server is in:
@@ -162,7 +169,11 @@ restarting the server erases everything except the bundled samples. The only
 data that leaves the machine is the retrieved excerpts sent to the Anthropic
 API for answering.
 
-## Running it
+## Quick start
+
+**Requirements:** Python 3.11+, Node 20+, and (optional) an Anthropic API key.
+Without a key, Clause still runs — it just shows the matching passages
+instead of writing plain-English answers (see below).
 
 **Backend** (Python 3.11+):
 
@@ -233,7 +244,7 @@ Anthropic API (auth, model, structured output, grounding round-trip), set
 ANTHROPIC_API_KEY=sk-ant-... .venv/bin/python -m pytest tests/test_live_llm.py -v
 ```
 
-## Project layout
+## Files
 
 ```
 clause/
