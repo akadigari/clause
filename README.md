@@ -1,6 +1,6 @@
 # Clause.
 
-**Plain-English answers about confusing documents — with receipts.**
+**Plain-English answers about confusing documents, with receipts.**
 
 ## What it does
 
@@ -12,7 +12,7 @@ the **exact clause and page** it came from. Click a citation and the source
 text lights up in the document viewer.
 
 And when the answer isn't in the document, Clause says
-**"I couldn't find that in this document"** — it never guesses. That's the
+**"I couldn't find that in this document."** It never guesses. That's the
 whole point: see [why below](#why-cite-the-exact-clause-never-guess-is-the-whole-point).
 
 Clause also has a proactive **red-flags scan** that checks a document for the
@@ -47,22 +47,22 @@ then running the red-flags scan. (Recording script: [`docs/RECORDING.md`](docs/R
 For legal and contract documents, a *plausible-sounding but wrong* answer is
 worse than no answer. If a tool tells you "you can cancel anytime" and the
 contract actually says "60 days written notice plus a two-month fee," the tool
-didn't save you time — it cost you $3,700. General-purpose chatbots fail here
+didn't save you time. It cost you $3,700. General-purpose chatbots fail here
 in two ways: they blend the document with their prior knowledge of "typical"
 contracts, and they can't show *where* an answer came from, so you can't check
-them without reading the whole document anyway — which defeats the purpose.
+them without reading the whole document anyway, which defeats the purpose.
 
 Clause is built so that trust never has to be assumed:
 
 1. **Answers can only come from the document.** The model never sees anything
    except retrieved excerpts of the uploaded file, and is instructed to use
-   nothing else — no outside knowledge of laws or "standard" terms.
+   nothing else: no outside knowledge of laws or "standard" terms.
 2. **Every claim carries a receipt.** Each source is an exact character span
-   (`page`, `start`, `end`) of the extracted text — the quote is
+   (`page`, `start`, `end`) of the extracted text. The quote is
    *reproducible*: `page_text[start:end] == quote`, byte for byte. Clicking it
    shows the real clause in context, so verifying an answer takes seconds.
 3. **Abstention is enforced, not requested.** Three independent layers can
-   each force an "I couldn't find that" (see below) — including one that
+   each force an "I couldn't find that" (see below), including one that
    *runs after* the model answers and throws the answer away if its citations
    don't check out.
 
@@ -96,7 +96,7 @@ Clause is built so that trust never has to be assumed:
                                      answer + exact quotes
 ```
 
-**Chunking** ([backend/app/chunking.py](backend/app/chunking.py)) — each PDF
+**Chunking** ([backend/app/chunking.py](backend/app/chunking.py)): each PDF
 page's text is split into ~1,100-character chunks along paragraph (falling
 back to sentence, falling back to raw character) boundaries, with ~180
 characters of overlap so a clause that straddles a boundary is fully present
@@ -104,7 +104,7 @@ in at least one chunk. The core invariant, covered by tests: every chunk is a
 **literal slice** of its page's text (`page_text[start:end] == text`). Nothing
 is rewritten, so citations can always be mapped back to the original.
 
-**Embeddings** ([backend/app/embedding.py](backend/app/embedding.py)) —
+**Embeddings** ([backend/app/embedding.py](backend/app/embedding.py)):
 pluggable via `CLAUSE_EMBEDDER`:
 
 | Embedder | How it works | Trade-off |
@@ -112,14 +112,14 @@ pluggable via `CLAUSE_EMBEDDER`:
 | `hash` (default) | Dependency-free lexical embedder: tokens hashed into signed buckets with sublinear TF weighting, L2-normalized. | Fully offline, deterministic, instant startup. Matches shared vocabulary ("pet fee" → pets clause) but not pure paraphrases ("dog" ↛ "pets"). |
 | `minilm` | Chroma's bundled ONNX `all-MiniLM-L6-v2` sentence transformer. | Real semantic matching; downloads ~80MB once and needs `onnxruntime`. |
 
-**Vector store** ([backend/app/store.py](backend/app/store.py)) — an
+**Vector store** ([backend/app/store.py](backend/app/store.py)): an
 **ephemeral, in-memory** Chroma collection per document (cosine space). On a
 question, the query is embedded once and the top-k chunks are retrieved across
-whichever documents are in scope (one or all — multi-document search merges
+whichever documents are in scope (one or all: multi-document search merges
 per-document results by score).
 
-**Answering** ([backend/app/llm.py](backend/app/llm.py)) — the retrieved
-excerpts (only them — never the full document) go to Claude
+**Answering** ([backend/app/llm.py](backend/app/llm.py)): the retrieved
+excerpts (only them, never the full document) go to Claude
 (`claude-opus-4-8` by default) with a system prompt that forbids outside
 knowledge, and a **structured-output JSON schema** forcing
 `{found, answer, citations[]}`. Citation indices are resolved back to chunk
@@ -137,7 +137,7 @@ spans server-side.
 
 Ask-and-answer is reactive: you have to know what to ask. The **red-flags
 scan** (`POST /api/documents/{id}/scan`, the ⚑ button in the UI) is the
-proactive twin — it probes a document for the clauses people most often get
+proactive twin: it probes a document for the clauses people most often get
 burned by (automatic renewal, fees and penalties, cancellation and
 termination, arbitration and legal rights, liability and warranty, changes to
 the terms, data and privacy) and reports each match **with the exact clause it
@@ -145,7 +145,7 @@ came from**.
 
 It reuses the same safety checks as ask, so the "never guess" rule still
 holds: each risk category is a retrieval query, only chunks that clear the
-relevance gate are candidates, and — with an LLM — a flag is dropped if its
+relevance gate are candidates, and, with an LLM, a flag is dropped if its
 citation doesn't map to a real excerpt. Same as answers: no receipts, no flag.
 
 The scan runs in whichever mode the server is in:
@@ -157,7 +157,7 @@ The scan runs in whichever mode the server is in:
   conservative: a topic is surfaced only when a passage literally contains one
   of that topic's signal terms (not just a shared word), the labels are neutral
   topics rather than accusations, and the citation is narrowed to the single
-  sentence that mentions the topic — never a claim about what the document
+  sentence that mentions the topic, never a claim about what the document
   *decides*, only "here's the relevant clause, read it."
 
 ## Privacy
@@ -172,7 +172,7 @@ API for answering.
 ## Quick start
 
 **Requirements:** Python 3.11+, Node 20+, and (optional) an Anthropic API key.
-Without a key, Clause still runs — it just shows the matching passages
+Without a key, Clause still runs. It just shows the matching passages
 instead of writing plain-English answers (see below).
 
 **Backend** (Python 3.11+):
@@ -193,19 +193,19 @@ npm run dev                                 # http://localhost:3000
 ```
 
 Two sample documents (a fictional apartment lease and a fictional terms of
-service) load automatically, so the demo works with zero setup — try
+service) load automatically, so the demo works with zero setup: try
 *"How do I cancel my subscription?"* on the Terms of Service.
 
 Without `ANTHROPIC_API_KEY`, Clause runs in **quote-only mode**: it still
 retrieves and shows the exact passages that match your question, it just won't
-write the plain-English summary. It degrades to showing receipts — never to
+write the plain-English summary. It degrades to showing receipts, never to
 guessing.
 
 ### Configuration
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | — | Enables plain-English answers |
+| `ANTHROPIC_API_KEY` | none | Enables plain-English answers |
 | `CLAUSE_MODEL` | `claude-opus-4-8` | Claude model for answering |
 | `CLAUSE_EMBEDDER` | `hash` | `hash` or `minilm` |
 | `CLAUSE_TOP_K` | `6` | Chunks retrieved per question |
@@ -220,17 +220,17 @@ cd backend && .venv/bin/python -m pytest
 
 41 tests cover the pillars:
 
-- **Chunking** — the exact-span invariant, full content coverage, size
+- **Chunking**: the exact-span invariant, full content coverage, size
   bounds, overlap behavior, page tracking, and degenerate inputs (empty
   pages, 5,000 characters with no whitespace).
-- **Retrieval** — right chunk / right page / right document, multi-document
+- **Retrieval**: right chunk / right page / right document, multi-document
   scoping and filtering, and quote reproducibility.
-- **Abstention** — each of the three layers independently forces "I couldn't
+- **Abstention**: each of the three layers independently forces "I couldn't
   find that": irrelevant questions never reach the LLM, a `found: false`
   verdict abstains, and a fabricated answer with invalid citations is
-  discarded (verified with a scripted fake LLM — no API key needed to run the
+  discarded (verified with a scripted fake LLM, no API key needed to run the
   suite).
-- **Red-flags scan** — signal-gated topic matching, sentence-level citations,
+- **Red-flags scan**: signal-gated topic matching, sentence-level citations,
   and the same grounding drops (invalid citation / unknown category → no flag).
 
 Plus end-to-end API tests that upload a real generated PDF and walk the full
