@@ -1,14 +1,22 @@
 # python
 backend/.venv/
+venv/
+.venv/
 __pycache__/
 *.pyc
 .pytest_cache/
 
 # node
 frontend/node_modules/
+node_modules/
 frontend/.next/
 frontend/next-env.d.ts
 *.tsbuildinfo
+
+# chroma / vector db storage (the app uses an in-memory client today, but
+# ignore this in case a persistent store is ever added)
+.chroma/
+chroma_db/
 
 # misc
 .DS_Store
