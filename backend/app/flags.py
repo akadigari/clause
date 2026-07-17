@@ -1,25 +1,25 @@
-"""Red-flags scan: proactively surface clauses a person would want to notice.
+"""Red-flags scan: point out clauses a person would want to notice, up front.
 
-This is the *proactive* twin of ask(). Instead of the user asking a question,
-Clause probes the document for a fixed set of risk categories (auto-renewal,
-penalties, arbitration, ...) and reports the clauses that genuinely match -
-each with the exact text it came from.
+This is the proactive twin of ask(). Instead of waiting for the user to ask a
+question, Clause checks the document against a fixed list of risk categories
+(auto-renewal, penalties, arbitration, ...) and reports the clauses that
+genuinely match - each with the exact text it came from.
 
-It reuses the same grounding machinery as ask(), so the "never guess" contract
-holds here too:
+It reuses the same safety checks as ask(), so the "never guess" rule holds
+here too:
 
-  1. Retrieval gate - each category is a retrieval query; only chunks that
-     clear the embedder's relevance threshold become candidates. A category
-     with no relevant chunk is never flagged.
+  1. Retrieval gate - each category is a search query; only chunks that clear
+     the embedder's relevance threshold become candidates. A category with no
+     relevant chunk is never flagged.
   2. Model judgment - with an LLM, the model sees only the candidate excerpts
      and decides which are real instances (a chunk that merely shares keywords
      is not a flag).
-  3. Citation check - a finding whose citations don't map to real candidate
-     excerpts is dropped. No receipts, no flag.
+  3. Citation check - a finding whose citations don't point to a real
+     candidate excerpt is dropped. No receipts, no flag.
 
-Without an API key, it degrades to extractive mode: the top passage per matched
-category is surfaced verbatim and labelled "worth reviewing" - unrated, because
-without a model Clause won't claim to judge severity.
+Without an API key, it falls back to extractive mode: the top passage per
+matched category is shown as-is and labelled "worth reviewing" - unrated,
+because without a model Clause won't claim to judge how serious it is.
 """
 
 import re

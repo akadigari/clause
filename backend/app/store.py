@@ -6,10 +6,12 @@ documents expire after a TTL; bundled sample documents never expire. The
 Chroma client is ephemeral, so the vector index also vanishes on restart.
 """
 
-# Defer annotation evaluation so `list[str]` in method signatures isn't
-# resolved eagerly against the class body, where the `list()` method would
-# otherwise shadow the builtin. Without this, importing on Python < 3.14
-# (which lacks PEP 649 lazy annotations) raises TypeError at class definition.
+# This class has both a method named list() and type hints like list[str].
+# Without this import, Python checks those type hints the moment it reads the
+# class - and at that moment, "list" means our list() method, not Python's
+# built-in list type, which crashes the import. This import tells Python to
+# check type hints later instead, so it sees the real list type. (Python
+# 3.14+ does this automatically; we add it so older Python versions work too.)
 from __future__ import annotations
 
 import time
