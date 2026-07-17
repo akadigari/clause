@@ -7,6 +7,7 @@ Endpoints:
     GET    /api/documents/{id}
     DELETE /api/documents/{id}
     POST   /api/ask
+    POST   /api/documents/{id}/scan   (red-flags scan)
 """
 
 import os
@@ -18,8 +19,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import config
 from .embedding import get_embedder
+from .flags import scan
 from .llm import Answerer, AnswererError, ClaudeAnswerer, ask
-from .models import AskRequest, AskResponse, DocumentDetail, DocumentMeta, Health, PageText
+from .models import (
+    AskRequest,
+    AskResponse,
+    DocumentDetail,
+    DocumentMeta,
+    Health,
+    PageText,
+    ScanResponse,
+)
 from .pdf_parser import PdfParseError, extract_pages
 from .store import DocumentStore, StoredDoc
 
@@ -130,6 +140,15 @@ def create_app(
                 )
         try:
             return ask(store, answerer, request.question, request.doc_ids)
+        except AnswererError as exc:
+            raise HTTPException(502, str(exc)) from exc
+
+    @app.post("/api/documents/{doc_id}/scan", response_model=ScanResponse)
+    def scan_document(doc_id: str) -> ScanResponse:
+        if store.get(doc_id) is None:
+            raise HTTPException(404, "Document not found (uploads expire after an hour).")
+        try:
+            return scan(store, answerer, doc_id)
         except AnswererError as exc:
             raise HTTPException(502, str(exc)) from exc
 

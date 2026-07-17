@@ -6,6 +6,12 @@ documents expire after a TTL; bundled sample documents never expire. The
 Chroma client is ephemeral, so the vector index also vanishes on restart.
 """
 
+# Defer annotation evaluation so `list[str]` in method signatures isn't
+# resolved eagerly against the class body, where the `list()` method would
+# otherwise shadow the builtin. Without this, importing on Python < 3.14
+# (which lacks PEP 649 lazy annotations) raises TypeError at class definition.
+from __future__ import annotations
+
 import time
 import uuid
 from dataclasses import dataclass, field

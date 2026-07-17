@@ -550,3 +550,162 @@ mark.clause-highlight {
   color: var(--muted);
   text-align: center;
 }
+
+/* ---------- red-flags scan ---------- */
+
+/* call-to-action in the empty chat state */
+.scan-cta {
+  margin-top: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scan-cta:hover {
+  background: #f0d8c6;
+}
+
+.scan-cta:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* compact button in the composer scope row */
+.scan-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--accent-dark);
+  border-radius: 999px;
+  padding: 5px 13px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scan-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.scan-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.scan-flag {
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* the scan result block */
+.msg.scan {
+  align-self: stretch;
+  max-width: 100%;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+
+.scan-mode {
+  color: var(--accent-dark);
+}
+
+.scan-note {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.flag-card {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  padding: 11px 13px;
+  margin-bottom: 10px;
+}
+
+.flag-card:last-child {
+  margin-bottom: 0;
+}
+
+.flag-card.sev-high {
+  border-left-color: #b3341f;
+  background: #fbeae6;
+}
+
+.flag-card.sev-medium {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.flag-card.sev-low {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.flag-card.sev-info {
+  border-left-color: var(--muted);
+}
+
+.flag-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
+.sev-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.sev-pill.sev-high {
+  background: #b3341f;
+}
+
+.sev-pill.sev-medium {
+  background: var(--accent);
+}
+
+.sev-pill.sev-low {
+  background: var(--warn);
+}
+
+.sev-pill.sev-info {
+  background: var(--muted);
+}
+
+.flag-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.flag-explain {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 9px;
+}

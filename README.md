@@ -28,6 +28,13 @@ And when the answer isn't in the document, Clause says
 └─────────────────────────────┴──────────────────────────────┘
 ```
 
+## Demo
+
+![Clause: ask a question, click the citation, see the exact clause highlight](docs/demo.gif)
+
+*Asking about late fees, clicking the citation to highlight the exact clause,
+then running the red-flags scan. (Recording script: [`docs/RECORDING.md`](docs/RECORDING.md).)*
+
 ## Why "cite the exact clause, never guess" is the whole point
 
 For legal and contract documents, a *plausible-sounding but wrong* answer is
@@ -119,6 +126,33 @@ spans server-side.
 | 2. Model judgment | in the LLM | Chunks are topically related but don't answer the question (asked about parking, retrieved the pets clause) → model returns `found: false`. |
 | 3. Citation check | after the LLM | Model claims an answer but cites nothing, or cites excerpts that don't exist → the answer is **discarded** and Clause abstains. No receipts, no answer. |
 
+## Red-flags scan
+
+Ask-and-answer is reactive: you have to know what to ask. The **red-flags
+scan** (`POST /api/documents/{id}/scan`, the ⚑ button in the UI) is the
+proactive twin — it probes a document for the clauses people most often get
+burned by (automatic renewal, fees and penalties, cancellation and
+termination, arbitration and legal rights, liability and warranty, changes to
+the terms, data and privacy) and reports each match **with the exact clause it
+came from**.
+
+It reuses the same grounding machinery as ask, so the "never guess" contract
+still holds: each risk category is a retrieval query, only chunks that clear
+the relevance gate are candidates, and — with an LLM — a flag is dropped if its
+citation doesn't map to a real excerpt. Same as answers: no receipts, no flag.
+
+The scan runs in whichever mode the server is in:
+
+- **With an API key** the model judges which candidate clauses are genuine
+  instances, rates severity (high / medium / low), and explains in plain
+  English why each matters to you.
+- **Without a key** (extractive mode) it can't judge, so it stays deliberately
+  conservative: a topic is surfaced only when a passage literally contains one
+  of that topic's signal terms (not just a shared word), the labels are neutral
+  topics rather than accusations, and the citation is narrowed to the single
+  sentence that mentions the topic — never a claim about what the document
+  *decides*, only "here's the relevant clause, read it."
+
 ## Privacy
 
 Documents are **never written to disk**. Uploads are parsed and indexed in
@@ -173,7 +207,7 @@ guessing.
 cd backend && .venv/bin/python -m pytest
 ```
 
-34 tests cover the three pillars:
+41 tests cover the pillars:
 
 - **Chunking** — the exact-span invariant, full content coverage, size
   bounds, overlap behavior, page tracking, and degenerate inputs (empty
@@ -185,9 +219,19 @@ cd backend && .venv/bin/python -m pytest
   verdict abstains, and a fabricated answer with invalid citations is
   discarded (verified with a scripted fake LLM — no API key needed to run the
   suite).
+- **Red-flags scan** — signal-gated topic matching, sentence-level citations,
+  and the same grounding drops (invalid citation / unknown category → no flag).
 
 Plus end-to-end API tests that upload a real generated PDF and walk the full
 upload → ask → cite → verify-quote loop.
+
+The whole suite runs offline with a scripted fake LLM. To exercise the **real**
+Anthropic API (auth, model, structured output, grounding round-trip), set
+`ANTHROPIC_API_KEY` and run the otherwise-skipped live smoke test:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-... .venv/bin/python -m pytest tests/test_live_llm.py -v
+```
 
 ## Project layout
 
@@ -201,6 +245,7 @@ clause/
 │   │   ├── embedding.py    # hash / MiniLM embedders + relevance gate
 │   │   ├── store.py        # in-memory registry + ephemeral Chroma
 │   │   ├── llm.py          # Claude answerer, abstain layers, prompts
+│   │   ├── flags.py        # red-flags scan: risk categories + grounding
 │   │   ├── models.py       # API schemas
 │   │   └── config.py
 │   ├── samples/            # generated demo PDFs

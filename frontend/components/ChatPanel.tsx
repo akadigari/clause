@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { AskMode, Source } from "@/lib/api";
+import type { AskMode, Flag, Severity, Source } from "@/lib/api";
 
 export type ChatMessage =
   | { role: "user"; text: string }
@@ -11,6 +11,13 @@ export type ChatMessage =
       found: boolean;
       mode: AskMode;
       sources: Source[];
+    }
+  | {
+      role: "scan";
+      docName: string;
+      mode: "llm" | "extractive";
+      flags: Flag[];
+      note: string;
     }
   | { role: "error"; text: string };
 
@@ -25,6 +32,13 @@ const MODE_LABEL: Record<AskMode, string> = {
   llm: "Answer · with receipts",
   extractive: "Matching passages · no LLM key set",
   abstain: "Not found in this document",
+};
+
+const SEVERITY_LABEL: Record<Severity, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  info: "Worth reviewing",
 };
 
 function SourceList({
@@ -61,23 +75,83 @@ function SourceList({
   );
 }
 
+function ScanResult({
+  docName,
+  mode,
+  flags,
+  note,
+  onCite,
+}: {
+  docName: string;
+  mode: "llm" | "extractive";
+  flags: Flag[];
+  note: string;
+  onCite: (source: Source) => void;
+}) {
+  return (
+    <div className="msg scan">
+      <span className="msg-mode scan-mode">
+        {flags.length > 0
+          ? `Red-flag scan · ${flags.length} clause${flags.length === 1 ? "" : "s"} to review`
+          : "Red-flag scan · nothing flagged"}
+        {mode === "extractive" ? " · no LLM key set" : ""}
+      </span>
+      <div className="scan-note">{note}</div>
+      {flags.map((flag) => (
+        <div className={`flag-card sev-${flag.severity}`} key={flag.category}>
+          <div className="flag-head">
+            <span className={`sev-pill sev-${flag.severity}`}>
+              {SEVERITY_LABEL[flag.severity]}
+            </span>
+            <span className="flag-title">{flag.title}</span>
+          </div>
+          {flag.explanation && (
+            <div className="flag-explain">{flag.explanation}</div>
+          )}
+          {flag.sources.map((source) => (
+            <button
+              key={source.chunk_id}
+              className="source-item"
+              onClick={() => onCite(source)}
+              title="Show this clause in the document"
+            >
+              <span className="source-loc">
+                {docName} · p. {source.page}
+              </span>
+              <span className="source-quote">
+                “{source.quote.length > 150 ? source.quote.slice(0, 150) + "…" : source.quote}”
+              </span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ChatPanel({
   messages,
   asking,
+  scanning,
+  canScan,
   docName,
   multipleDocs,
   scope,
   onScopeChange,
   onAsk,
+  onScan,
   onCite,
 }: {
   messages: ChatMessage[];
   asking: boolean;
+  scanning: boolean;
+  canScan: boolean;
   docName: string | null;
   multipleDocs: boolean;
   scope: "doc" | "all";
   onScopeChange: (scope: "doc" | "all") => void;
   onAsk: (question: string) => void;
+  onScan: () => void;
   onCite: (source: Source) => void;
 }) {
   const [draft, setDraft] = useState("");
@@ -85,7 +159,7 @@ export default function ChatPanel({
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length, asking]);
+  }, [messages.length, asking, scanning]);
 
   const submit = (question: string) => {
     const trimmed = question.trim();
@@ -97,7 +171,7 @@ export default function ChatPanel({
   return (
     <>
       <div className="chat-scroll" ref={scrollRef}>
-        {messages.length === 0 && !asking && (
+        {messages.length === 0 && !asking && !scanning && (
           <div className="chat-empty">
             <h2>Ask about your document</h2>
             <p>
@@ -112,6 +186,14 @@ export default function ChatPanel({
                 </button>
               ))}
             </div>
+            <button
+              className="scan-cta"
+              onClick={onScan}
+              disabled={!canScan}
+              title="Point out the clauses worth noticing — each with the exact text"
+            >
+              <span className="scan-flag">⚑</span> Scan this document for red flags
+            </button>
           </div>
         )}
 
@@ -128,6 +210,18 @@ export default function ChatPanel({
               <div className="msg error" key={i}>
                 {msg.text}
               </div>
+            );
+          }
+          if (msg.role === "scan") {
+            return (
+              <ScanResult
+                key={i}
+                docName={msg.docName}
+                mode={msg.mode}
+                flags={msg.flags}
+                note={msg.note}
+                onCite={onCite}
+              />
             );
           }
           return (
@@ -149,6 +243,11 @@ export default function ChatPanel({
             Reading the document<span className="dots" />
           </div>
         )}
+        {scanning && (
+          <div className="thinking">
+            Scanning for red flags<span className="dots" />
+          </div>
+        )}
       </div>
 
       <div className="composer">
@@ -164,6 +263,15 @@ export default function ChatPanel({
             </option>
             <option value="all">All documents</option>
           </select>
+          <button
+            className="scan-btn"
+            onClick={onScan}
+            disabled={!canScan || scanning}
+            title="Point out the clauses worth noticing in this document"
+          >
+            <span className="scan-flag">⚑</span>
+            {scanning ? "Scanning…" : "Scan for red flags"}
+          </button>
         </div>
         <div className="input-row">
           <textarea

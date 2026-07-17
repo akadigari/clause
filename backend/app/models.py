@@ -48,6 +48,28 @@ class AskResponse(BaseModel):
     sources: list[Source]
 
 
+class Flag(BaseModel):
+    """One clause worth noticing, with the exact text it came from."""
+
+    category: str  # stable id, e.g. "auto_renewal"
+    title: str  # human label, e.g. "Automatic renewal"
+    # "high" | "medium" | "low" when an LLM judged it; "info" in extractive mode
+    # (no key set, so Clause surfaces the passage but won't rate its severity).
+    severity: str
+    explanation: str  # plain-English why-it-matters; generic in extractive mode
+    sources: list[Source]
+
+
+class ScanResponse(BaseModel):
+    doc_id: str
+    doc_name: str
+    # "llm"        -> an LLM judged which clauses are genuine risks
+    # "extractive" -> no API key; passages that matched a risk category, unrated
+    mode: str
+    flags: list[Flag]
+    note: str  # framing shown above the results (what this is / is not)
+
+
 class Health(BaseModel):
     status: str
     llm: bool

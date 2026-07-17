@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from fpdf import FPDF
 
 from app.embedding import HashingEmbedder
-from app.llm import Answer
+from app.llm import Answer, FlagFinding
 from app.main import create_app
 from app.store import DocumentStore, StoredDoc
 
@@ -27,13 +27,23 @@ def make_pdf(pages: list[list[str]]) -> bytes:
 class FakeAnswerer:
     """Scripted stand-in for ClaudeAnswerer; records every call."""
 
-    def __init__(self, result: Answer | None = None):
+    def __init__(
+        self,
+        result: Answer | None = None,
+        flags: list[FlagFinding] | None = None,
+    ):
         self.result = result or Answer(found=True, answer="stub", citations=[0])
+        self.flags = flags or []
         self.calls: list[tuple[str, list[tuple[str, str]]]] = []
+        self.flag_calls: list[tuple[list[tuple[str, str]], list[tuple[str, str]]]] = []
 
     def answer(self, question, excerpts):
         self.calls.append((question, excerpts))
         return self.result
+
+    def find_flags(self, excerpts, categories):
+        self.flag_calls.append((excerpts, categories))
+        return self.flags
 
 
 LEASE_PAGES = [

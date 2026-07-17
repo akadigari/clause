@@ -18,6 +18,7 @@ export default function Home() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [asking, setAsking] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [scope, setScope] = useState<"doc" | "all">("doc");
   const [highlight, setHighlight] = useState<Highlight | null>(null);
@@ -128,6 +129,36 @@ export default function Home() {
     }
   };
 
+  const handleScan = async () => {
+    if (!activeId || scanning) return;
+    const doc = docs.find((d) => d.id === activeId);
+    setMessages((m) => [
+      ...m,
+      { role: "user", text: `Scan “${doc?.name ?? "this document"}” for red flags` },
+    ]);
+    setScanning(true);
+    try {
+      const res = await api.scan(activeId);
+      setMessages((m) => [
+        ...m,
+        {
+          role: "scan",
+          docName: res.doc_name,
+          mode: res.mode,
+          flags: res.flags,
+          note: res.note,
+        },
+      ]);
+    } catch (err) {
+      setMessages((m) => [
+        ...m,
+        { role: "error", text: err instanceof Error ? err.message : "Scan failed." },
+      ]);
+    } finally {
+      setScanning(false);
+    }
+  };
+
   const handleCite = (source: Source) => {
     void openDoc(source.doc_id);
     setHighlight((prev) => ({
@@ -184,11 +215,14 @@ export default function Home() {
           <ChatPanel
             messages={messages}
             asking={asking}
+            scanning={scanning}
+            canScan={activeId !== null}
             docName={activeDoc?.name ?? null}
             multipleDocs={docs.length > 1}
             scope={scope}
             onScopeChange={setScope}
             onAsk={(q) => void handleAsk(q)}
+            onScan={() => void handleScan()}
             onCite={handleCite}
           />
         </section>

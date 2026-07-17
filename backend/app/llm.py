@@ -79,12 +79,87 @@ class Answer:
     citations: list[int]  # indices into the excerpt list passed to answer()
 
 
+@dataclass
+class FlagFinding:
+    """One risk the model judged genuinely present in the excerpts.
+
+    Same grounding contract as Answer: ``citations`` index into the excerpt
+    pool passed to find_flags(), and a finding with no valid citation is
+    dropped by the scan orchestrator - a flag without receipts is not a flag.
+    """
+
+    category: str  # must match one of the requested category ids
+    severity: str  # "high" | "medium" | "low"
+    explanation: str
+    citations: list[int]
+
+
+SCAN_SYSTEM_PROMPT = """You are Clause, reviewing a document (lease, contract, \
+terms of service, insurance policy, or manual) to point out clauses an ordinary \
+person would want to notice before signing or agreeing to it.
+
+You will receive a list of risk categories (each with an id) and a numbered \
+list of excerpts from the user's document. The excerpts are the ONLY thing you \
+know about this document.
+
+Rules, in priority order:
+1. Only flag something that is actually stated in the excerpts. Never infer, \
+assume, or use outside knowledge about typical contracts or the law. If a \
+category is not clearly present in the excerpts, do not flag it.
+2. Every flag must cite the excerpt number(s) it is based on. No excerpt, no \
+flag.
+3. Use one of the provided category ids exactly. If an excerpt raises a \
+concern that fits none of the categories, skip it.
+4. severity: "high" for clauses that can cost real money or remove important \
+rights (auto-renewal that keeps charging you, large penalties, giving up the \
+right to sue); "medium" for meaningful costs or obligations; "low" for minor \
+notes.
+5. explanation: one or two short, plain-English sentences telling the reader \
+what the clause means for THEM and why it is worth noticing. No legal jargon. \
+Quote concrete numbers, dates, or amounts from the excerpt when they are there.
+6. You point out what the document says; you do not give legal advice. Do not \
+add disclaimers - just describe the clause plainly.
+7. Returning an empty list is correct when nothing in the excerpts genuinely \
+matches the categories. Never manufacture a flag to fill the list.
+
+Respond with JSON: {"flags": [{"category": string, "severity": \
+"high"|"medium"|"low", "explanation": string, "citations": number[]}]}."""
+
+FLAG_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "flags": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string"},
+                    "severity": {"type": "string", "enum": ["high", "medium", "low"]},
+                    "explanation": {"type": "string"},
+                    "citations": {"type": "array", "items": {"type": "integer"}},
+                },
+                "required": ["category", "severity", "explanation", "citations"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["flags"],
+    "additionalProperties": False,
+}
+
+
 # An excerpt is (label, text), e.g. ("Sample Lease, page 3", "...clause text...")
 Excerpt = tuple[str, str]
+# A candidate risk category is (id, one-line description) shown to the model.
+Category = tuple[str, str]
 
 
 class Answerer(Protocol):
     def answer(self, question: str, excerpts: list[Excerpt]) -> Answer: ...
+
+    def find_flags(
+        self, excerpts: list[Excerpt], categories: list[Category]
+    ) -> list[FlagFinding]: ...
 
 
 class AnswererError(Exception):
@@ -137,6 +212,51 @@ class ClaudeAnswerer:
             )
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             raise AnswererError(f"LLM returned an unparseable answer: {exc}") from exc
+
+    def find_flags(
+        self, excerpts: list[Excerpt], categories: list[Category]
+    ) -> list[FlagFinding]:
+        numbered = "\n\n".join(
+            f"[Excerpt {i}]\n{text}" for i, (_, text) in enumerate(excerpts)
+        )
+        catlist = "\n".join(f"- {cid}: {desc}" for cid, desc in categories)
+        prompt = (
+            f"Risk categories to look for:\n{catlist}\n\n"
+            f"Document excerpts:\n\n{numbered}"
+        )
+        try:
+            response = self._client.messages.create(
+                model=self.model,
+                max_tokens=config.MAX_ANSWER_TOKENS,
+                system=SCAN_SYSTEM_PROMPT,
+                thinking={"type": "adaptive"},
+                output_config={"format": {"type": "json_schema", "schema": FLAG_SCHEMA}},
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except self._anthropic.AuthenticationError as exc:
+            raise AnswererError(f"Anthropic API key was rejected: {exc}") from exc
+        except self._anthropic.APIStatusError as exc:
+            raise AnswererError(f"LLM request failed ({exc.status_code}): {exc.message}") from exc
+        except self._anthropic.APIConnectionError as exc:
+            raise AnswererError(f"Could not reach the Anthropic API: {exc}") from exc
+
+        if response.stop_reason == "refusal":
+            return []
+
+        text = next((b.text for b in response.content if b.type == "text"), "")
+        try:
+            data = json.loads(text)
+            return [
+                FlagFinding(
+                    category=str(f["category"]),
+                    severity=str(f["severity"]),
+                    explanation=str(f["explanation"]),
+                    citations=[int(i) for i in f["citations"]],
+                )
+                for f in data["flags"]
+            ]
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            raise AnswererError(f"LLM returned an unparseable scan: {exc}") from exc
 
 
 def _source(r: Retrieved) -> Source:

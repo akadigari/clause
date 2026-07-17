@@ -42,6 +42,24 @@ export interface Health {
   embedder: string;
 }
 
+export type Severity = "high" | "medium" | "low" | "info";
+
+export interface Flag {
+  category: string;
+  title: string;
+  severity: Severity;
+  explanation: string;
+  sources: Source[];
+}
+
+export interface ScanResponse {
+  doc_id: string;
+  doc_name: string;
+  mode: "llm" | "extractive";
+  flags: Flag[];
+  note: string;
+}
+
 async function jsonOrThrow<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let detail = `Request failed (${res.status})`;
@@ -84,4 +102,9 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, doc_ids: docIds }),
     }).then((r) => jsonOrThrow<AskResponse>(r)),
+
+  scan: (docId: string) =>
+    fetch(`/api/documents/${docId}/scan`, { method: "POST" }).then((r) =>
+      jsonOrThrow<ScanResponse>(r),
+    ),
 };
