@@ -47,7 +47,7 @@ export default function DocToolbar({
           tabIndex={0}
           onClick={() => onSelect(doc.id)}
           onKeyDown={(e) => e.key === "Enter" && onSelect(doc.id)}
-          title={`${doc.name} — ${doc.pages} page${doc.pages === 1 ? "" : "s"}`}
+          title={`${doc.name}, ${doc.pages} page${doc.pages === 1 ? "" : "s"}`}
         >
           <span className="doc-tab-name">{doc.name}</span>
           {doc.sample ? (

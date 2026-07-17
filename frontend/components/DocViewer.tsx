@@ -33,7 +33,7 @@ export default function DocViewer({
         <div className="viewer-drop">
           <h3>No document open</h3>
           <p>
-            Pick a sample above, or upload a PDF — a lease, a contract, a terms
+            Pick a sample above, or upload a PDF: a lease, a contract, a terms
             of service, an insurance policy, a manual…
           </p>
         </div>

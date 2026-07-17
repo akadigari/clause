@@ -179,7 +179,7 @@ export default function Home() {
           Clause<span className="brand-dot">.</span>
         </span>
         <span className="tagline">
-          Plain-English answers about confusing documents — with receipts.
+          Plain-English answers about confusing documents, with receipts.
         </span>
         <span className="topbar-right">
           {health &&
@@ -192,7 +192,7 @@ export default function Home() {
                 className="badge warn"
                 title="Set ANTHROPIC_API_KEY on the backend to enable plain-English answers"
               >
-                ● no LLM key — passages only
+                ● no LLM key (passages only)
               </span>
             ))}
         </span>

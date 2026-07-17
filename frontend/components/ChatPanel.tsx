@@ -190,7 +190,7 @@ export default function ChatPanel({
               className="scan-cta"
               onClick={onScan}
               disabled={!canScan}
-              title="Point out the clauses worth noticing — each with the exact text"
+              title="Point out the clauses worth noticing, each with the exact text"
             >
               <span className="scan-flag">⚑</span> Scan this document for red flags
             </button>
@@ -295,8 +295,8 @@ export default function ChatPanel({
           </button>
         </div>
         <div className="privacy-note">
-          Documents are processed in memory only and expire after an hour —
-          nothing is stored on a server.
+          Documents are processed in memory only and expire after an hour.
+          Nothing is stored on a server.
         </div>
       </div>
     </>
