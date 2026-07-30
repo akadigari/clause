@@ -1,0 +1,309 @@
+/* ==========================================================================
+   Clause: the empty bench
+   --------------------------------------------------------------------------
+   The first thing anyone sees. It is not a marketing page stapled to a tool,
+   it is the tool with nothing on it yet: the same surface, the same crop
+   marks, waiting for a file.
+   ========================================================================== */
+
+.landing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  padding: 40px 28px 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  isolation: isolate;
+}
+
+/* Centred when it fits, scrolled from the top when it does not. `margin: auto`
+   does both; `justify-content: center` would centre it and then clip the top
+   off on a short window, with no way to scroll back up to it. */
+.landing-inner {
+  margin: auto;
+}
+
+/* One sweep of the lamp across the bench as the app boots. It happens once,
+   it takes half a second, and then it is gone. */
+.landing::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  z-index: -1;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--lume) 24%, transparent),
+    transparent
+  );
+  filter: blur(48px);
+  animation: lume-sweep 1500ms var(--ease-settle) 180ms both;
+  pointer-events: none;
+}
+
+.landing-inner {
+  width: 100%;
+  max-width: 680px;
+  text-align: center;
+  flex: none;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--lume);
+  margin-bottom: 20px;
+  animation: settle-in 500ms var(--ease-settle) 120ms both;
+}
+
+.eyebrow .rule {
+  width: 26px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+
+/* The thesis. The display face at its widest, once, and never again. */
+.thesis {
+  font-family: var(--display);
+  font-size: var(--t-hero);
+  font-weight: 700;
+  font-variation-settings: "wdth" 82, "opsz" 48;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  margin: 0 0 20px;
+  color: var(--text);
+  text-wrap: balance;
+  animation: settle-in 620ms var(--ease-settle) 200ms both;
+}
+
+.thesis .lit {
+  color: var(--lume);
+  position: relative;
+  white-space: nowrap;
+}
+
+.sub {
+  margin: 0 auto 34px;
+  max-width: 52ch;
+  font-size: var(--t-md);
+  line-height: 1.6;
+  color: var(--text-2);
+  text-wrap: pretty;
+  animation: settle-in 620ms var(--ease-settle) 300ms both;
+}
+
+/* -- the drop target ----------------------------------------------------- */
+
+.dropzone {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 46px 28px;
+  border-radius: var(--r-3);
+  border: 1px dashed var(--rule-hi);
+  background: color-mix(in srgb, var(--bench-2) 55%, transparent);
+  color: var(--text);
+  transition:
+    border-color var(--t-med) var(--ease-settle),
+    background var(--t-med) var(--ease-settle),
+    transform var(--t-med) var(--ease-spring);
+  animation: settle-in 620ms var(--ease-settle) 380ms both;
+  cursor: pointer;
+}
+
+.dropzone:hover,
+.dropzone:focus-within {
+  border-color: var(--lume-edge);
+  background: color-mix(in srgb, var(--lume) 5%, var(--bench-2));
+}
+
+.dropzone.over {
+  border-color: var(--lume);
+  border-style: solid;
+  background: var(--lume-wash);
+  transform: scale(1.012);
+}
+
+.dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dropzone .big {
+  font-size: var(--t-lg);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.dropzone .small {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--text-3);
+}
+
+/* The crop marks on the drop target draw themselves in as the page settles,
+   the same marks that frame a real page once one is open. */
+.dropzone .crop {
+  opacity: 0;
+  animation: settle-in 420ms var(--ease-settle) both;
+}
+
+.dropzone .crop.tl {
+  animation-delay: 620ms;
+}
+.dropzone .crop.tr {
+  animation-delay: 680ms;
+}
+.dropzone .crop.bl {
+  animation-delay: 740ms;
+}
+.dropzone .crop.br {
+  animation-delay: 800ms;
+}
+
+.dropzone:hover .crop {
+  opacity: 1;
+}
+
+/* -- samples ------------------------------------------------------------- */
+
+.samples {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  animation: settle-in 620ms var(--ease-settle) 460ms both;
+}
+
+.samples .lead {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--text-3);
+  margin-right: 2px;
+}
+
+.sample-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  color: var(--text-2);
+  font-size: var(--t-sm);
+  transition:
+    border-color var(--t-fast),
+    color var(--t-fast),
+    background var(--t-fast);
+}
+
+.sample-chip:hover {
+  border-color: var(--lume-edge);
+  color: var(--text);
+  background: var(--lume-wash);
+}
+
+/* -- what it does -------------------------------------------------------- */
+
+.capabilities {
+  margin-top: 46px;
+  width: 100%;
+  animation: settle-in 700ms var(--ease-settle) 560ms both;
+}
+
+.capabilities .label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  overflow: hidden;
+}
+
+.cap {
+  background: var(--bench-1);
+  padding: 12px 13px;
+  text-align: left;
+  transition: background var(--t-fast);
+}
+
+.cap:hover {
+  background: var(--bench-2);
+}
+
+.cap b {
+  display: block;
+  font-size: var(--t-base);
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.cap span {
+  font-size: var(--t-sm);
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+/* -- the honest footnote ------------------------------------------------- */
+
+.footnote {
+  margin-top: 30px;
+  font-size: var(--t-sm);
+  line-height: 1.6;
+  color: var(--text-3);
+  max-width: 58ch;
+  margin-inline: auto;
+  animation: settle-in 700ms var(--ease-settle) 640ms both;
+}
+
+.footnote a {
+  color: var(--text-2);
+  text-underline-offset: 3px;
+  text-decoration-color: var(--rule-hi);
+}
+
+.footnote a:hover {
+  color: var(--lume);
+}
+
+.footnote code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+@media (max-width: 620px) {
+  .landing {
+    padding: 26px 18px 40px;
+    justify-content: flex-start;
+  }
+
+  .dropzone {
+    padding: 34px 20px;
+  }
+
+  .capabilities {
+    margin-top: 32px;
+  }
+}

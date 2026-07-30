@@ -1,0 +1,1051 @@
+/* ==========================================================================
+   Clause: bench layout
+   --------------------------------------------------------------------------
+   Five parts, left to right: the rail (which tool), the ribbon (which pages),
+   the stage (the page itself), the inspector (the controls for the tool).
+   A status bar runs underneath with the measurements.
+   ========================================================================== */
+
+.bench {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  background: var(--bench-1);
+}
+
+/* ==========================================================================
+   topbar
+   ========================================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bench-2);
+  position: relative;
+  z-index: 20;
+}
+
+/* The wordmark: the one place the display face is allowed out. The square is
+   a registration mark, the same one drawn at the corners of the stage. */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 700;
+  font-variation-settings: "wdth" 88, "opsz" 24;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  user-select: none;
+}
+
+.wordmark .reg {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  position: relative;
+  color: var(--lume);
+}
+
+.wordmark .reg::before,
+.wordmark .reg::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+.wordmark .reg::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  transform: translateX(-50%);
+}
+
+.wordmark .reg::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  transform: translateY(-50%);
+}
+
+.doc-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.doc-title .name {
+  font-size: var(--t-md);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40ch;
+}
+
+.doc-title .facts {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--text-3);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-title .facts .dot {
+  opacity: 0.45;
+  margin: 0 7px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* The lamp switch. A real bench lamp: the bulb fills when it is on. */
+.lamp {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  color: var(--text-2);
+  transition:
+    color var(--t-med) var(--ease-settle),
+    background var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.lamp:hover {
+  background: var(--bench-3);
+  color: var(--text);
+}
+
+html[data-bench="light"] .lamp {
+  color: var(--lume);
+  border-color: var(--lume-edge);
+  background: var(--lume-wash);
+}
+
+/* ==========================================================================
+   the network meter: the signature element
+   --------------------------------------------------------------------------
+   It counts real outbound requests using PerformanceObserver, so it is not a
+   badge that says "private", it is an instrument the user can check against
+   their own devtools.
+   ========================================================================== */
+
+.meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  height: 34px;
+  padding: 0 11px 0 10px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--text-2);
+  position: relative;
+  transition: border-color var(--t-med) var(--ease-settle);
+}
+
+.meter .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--true);
+  transition: background var(--t-med);
+}
+
+.meter.quiet .dot {
+  animation: pulse-ring 2.6s var(--ease-settle) infinite;
+}
+
+.meter.talking {
+  border-color: var(--lume-edge);
+  background: var(--lume-wash);
+  color: var(--text);
+}
+
+.meter.talking .dot {
+  background: var(--lume);
+  animation: pulse-ring 900ms var(--ease-settle) infinite;
+}
+
+.meter .bytes {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.meter-pop {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  width: 320px;
+  padding: 13px 14px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  box-shadow: var(--lift);
+  font-family: var(--sans);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--text-2);
+  z-index: 40;
+  animation: settle-in var(--t-med) var(--ease-settle) both;
+  text-align: left;
+}
+
+.meter-pop h4 {
+  margin: 0 0 7px;
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.meter-pop p {
+  margin: 0 0 9px;
+}
+
+.meter-pop p:last-child {
+  margin-bottom: 0;
+}
+
+.meter-pop code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bench-3);
+  padding: 1px 5px;
+  border-radius: var(--r-1);
+  color: var(--text);
+}
+
+/* ==========================================================================
+   main region
+   ========================================================================== */
+
+.main {
+  display: grid;
+  grid-template-columns: var(--rail-w) var(--ribbon-w) minmax(0, 1fr) var(--inspector-w);
+  min-height: 0;
+}
+
+.main.no-doc {
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+}
+
+/* ==========================================================================
+   rail
+   ========================================================================== */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-right: 1px solid var(--rule);
+  background: var(--bench-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 2px 7px;
+  margin: 0 7px;
+  border-radius: var(--r-2);
+  color: var(--text-3);
+  position: relative;
+  transition:
+    color var(--t-fast) var(--ease-settle),
+    background var(--t-fast) var(--ease-settle);
+}
+
+.rail-btn span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rail-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bench-3);
+}
+
+.rail-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.rail-btn.on {
+  color: var(--lume);
+  background: var(--lume-wash);
+}
+
+/* The active tool gets a light bar on the rail edge, like a lit indicator. */
+.rail-btn.on::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--lume);
+  box-shadow: 0 0 10px var(--lume-edge);
+  animation: settle-in var(--t-fast) var(--ease-settle) both;
+}
+
+.rail-sep {
+  height: 1px;
+  background: var(--rule);
+  margin: 7px 14px;
+}
+
+/* ==========================================================================
+   ribbon: the page stack
+   --------------------------------------------------------------------------
+   The signature interaction. Pages are physical objects in an ordered strip:
+   drag to reorder, click the gap to cut. Everything that changes the stack
+   animates from where it was to where it lands, so the change is legible.
+   ========================================================================== */
+
+.ribbon {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--rule);
+  background: var(--bench-0);
+  min-height: 0;
+}
+
+.ribbon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bench-2);
+}
+
+.ribbon-scroll {
+  overflow-y: auto;
+  padding: 12px 0 40px;
+  flex: 1;
+  min-height: 0;
+}
+
+.ribbon-item {
+  position: relative;
+  padding: 0 16px;
+}
+
+.page-chip {
+  position: relative;
+  width: 100%;
+  display: block;
+  border-radius: var(--r-1);
+  background: var(--paper);
+  border: 1px solid transparent;
+  box-shadow: var(--page-shadow);
+  overflow: hidden;
+  transition:
+    transform var(--t-med) var(--ease-spring),
+    box-shadow var(--t-fast),
+    opacity var(--t-med);
+  touch-action: none;
+}
+
+.page-chip canvas,
+.page-chip img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* A page with nothing rendered yet still holds its slot, so the strip does
+   not jump around as thumbnails arrive. */
+.page-chip .pending {
+  aspect-ratio: 1 / 1.294;
+  background: linear-gradient(100deg, var(--bench-3) 30%, var(--bench-2) 50%, var(--bench-3) 70%);
+  background-size: 300% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -300% 0;
+  }
+}
+
+.ribbon-item.selected .page-chip {
+  border-color: var(--lume);
+  box-shadow:
+    var(--page-shadow),
+    0 0 0 3px var(--lume-wash);
+}
+
+.ribbon-item.dragging .page-chip {
+  opacity: 0.45;
+  transform: scale(0.96);
+  box-shadow: none;
+}
+
+.ribbon-item.lifted .page-chip {
+  transform: scale(1.04) rotate(-1.2deg);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    0 26px 50px -12px rgba(0, 0, 0, 0.8);
+  z-index: 5;
+}
+
+.page-no {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(14, 17, 22, 0.78);
+  color: #fff;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(3px);
+}
+
+.ribbon-item.selected .page-no {
+  background: var(--lume);
+  color: var(--lume-ink);
+}
+
+/* Rotation badge, only shown when a page is actually turned. */
+.page-turn {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(14, 17, 22, 0.78);
+  color: var(--lume-hi);
+  backdrop-filter: blur(3px);
+}
+
+.page-marked {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--cut);
+  border-radius: var(--r-1);
+  background: var(--cut-wash);
+  pointer-events: none;
+}
+
+/* -- the gap between pages: where a cut goes ----------------------------- */
+
+.gap {
+  height: 22px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.gap-line {
+  width: calc(100% - 32px);
+  height: 1px;
+  background: transparent;
+  position: relative;
+  transition: background var(--t-fast);
+}
+
+.gap:hover .gap-line,
+.gap.armed .gap-line {
+  background: var(--rule-hi);
+}
+
+.gap.cut .gap-line {
+  background: var(--lume);
+}
+
+/* Scissor ticks that grow out of the seam on hover: the affordance for a
+   split is the cut mark itself, not a button that says "split here". */
+.gap-line::before,
+.gap-line::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 1px;
+  background: var(--lume);
+  opacity: 0;
+  transition:
+    opacity var(--t-fast),
+    transform var(--t-med) var(--ease-spring);
+}
+
+.gap-line::before {
+  left: -9px;
+  transform: translateY(-50%) translateX(6px);
+}
+
+.gap-line::after {
+  right: -9px;
+  transform: translateY(-50%) translateX(-6px);
+}
+
+.gap:hover .gap-line::before,
+.gap.cut .gap-line::before {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.gap:hover .gap-line::after,
+.gap.cut .gap-line::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.gap-hint {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lume);
+  background: var(--bench-0);
+  padding: 0 6px;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  pointer-events: none;
+}
+
+.gap:hover .gap-hint,
+.gap.cut .gap-hint {
+  opacity: 1;
+}
+
+/* Where the strip has actually been cut, it separates. */
+.gap.cut {
+  height: 40px;
+}
+
+/* The drop indicator while dragging a page to a new slot. */
+.gap.drop-target .gap-line {
+  background: var(--lume);
+  box-shadow: 0 0 10px var(--lume-edge);
+  height: 2px;
+}
+
+/* ==========================================================================
+   stage
+   ========================================================================== */
+
+.stage {
+  position: relative;
+  overflow: auto;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(75, 156, 211, 0.07), transparent 62%),
+    var(--bench-0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px;
+  min-height: 0;
+}
+
+html[data-bench="light"] .stage {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(75, 156, 211, 0.13), transparent 62%),
+    var(--bench-0);
+}
+
+.sheet {
+  position: relative;
+  flex: none;
+  animation: settle-in var(--t-med) var(--ease-settle) both;
+}
+
+.sheet canvas {
+  display: block;
+  background: var(--paper);
+  box-shadow: var(--page-shadow);
+  border-radius: 1px;
+}
+
+/* Crop marks. Real prepress marks at the trim corners: they say where the
+   page ends, which is exactly what this tool is for. */
+.crop {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  pointer-events: none;
+  color: var(--lume);
+  opacity: 0.62;
+}
+
+.crop::before,
+.crop::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+
+.crop::before {
+  width: 100%;
+  height: 1px;
+}
+
+.crop::after {
+  width: 1px;
+  height: 100%;
+}
+
+.crop.tl {
+  top: -9px;
+  left: -9px;
+}
+.crop.tl::before {
+  top: 0;
+  left: 0;
+}
+.crop.tl::after {
+  top: 0;
+  left: 0;
+}
+
+.crop.tr {
+  top: -9px;
+  right: -9px;
+}
+.crop.tr::before {
+  top: 0;
+  right: 0;
+}
+.crop.tr::after {
+  top: 0;
+  right: 0;
+}
+
+.crop.bl {
+  bottom: -9px;
+  left: -9px;
+}
+.crop.bl::before {
+  bottom: 0;
+  left: 0;
+}
+.crop.bl::after {
+  bottom: 0;
+  left: 0;
+}
+
+.crop.br {
+  bottom: -9px;
+  right: -9px;
+}
+.crop.br::before {
+  bottom: 0;
+  right: 0;
+}
+.crop.br::after {
+  bottom: 0;
+  right: 0;
+}
+
+/* Overlay layers sit exactly on top of the rendered page. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.overlay.grab {
+  cursor: crosshair;
+}
+
+/* The text layer: invisible spans positioned over the rendered glyphs so
+   text can be selected and citations can be highlighted in place. The glyphs
+   themselves are painted on the canvas underneath, so everything here is
+   transparent and only the backgrounds show. */
+.textlayer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  transform-origin: 0 0;
+}
+
+.textlayer span {
+  position: absolute;
+  white-space: pre;
+  transform-origin: 0 0;
+  color: transparent;
+  cursor: text;
+}
+
+.textlayer ::selection {
+  background: var(--mark);
+}
+
+/* A real highlighter lets the words through. An opaque fill would sit on top
+   of the canvas and hide the exact text the citation is pointing at, which
+   would defeat the entire feature. */
+.textlayer span.cited {
+  background: var(--mark);
+  border-radius: 2px;
+  animation: mark-in 420ms var(--ease-settle) both;
+}
+
+@keyframes mark-in {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: var(--mark);
+  }
+}
+
+.stage-empty {
+  margin: auto;
+  text-align: center;
+  max-width: 460px;
+  color: var(--text-3);
+}
+
+.zoom-cluster {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 99px;
+  border: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--bench-2) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--lift);
+  z-index: 6;
+}
+
+.zoom-cluster .val {
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.round {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-2);
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+
+.round:hover:not(:disabled) {
+  background: var(--bench-3);
+  color: var(--text);
+}
+
+.round:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   inspector
+   ========================================================================== */
+
+.inspector {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--rule);
+  background: var(--bench-2);
+  min-height: 0;
+}
+
+.inspector-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 15px 11px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.inspector-head h2 {
+  margin: 0;
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.inspector-head .why {
+  margin: 2px 0 0;
+  font-size: var(--t-sm);
+  color: var(--text-3);
+  line-height: 1.45;
+}
+
+.inspector-body {
+  overflow-y: auto;
+  padding: 15px;
+  flex: 1;
+  min-height: 0;
+}
+
+.inspector-foot {
+  padding: 12px 15px;
+  border-top: 1px solid var(--rule);
+  background: var(--bench-2);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.panel-section {
+  margin-bottom: 20px;
+}
+
+.panel-section > .label {
+  display: block;
+  margin-bottom: 9px;
+}
+
+/* ==========================================================================
+   status bar
+   ========================================================================== */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 28px;
+  padding: 0 14px;
+  border-top: 1px solid var(--rule);
+  background: var(--bench-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.statusbar .grow {
+  margin-left: auto;
+}
+
+.statusbar b {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   toasts
+   ========================================================================== */
+
+.toasts {
+  position: fixed;
+  bottom: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  z-index: 60;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  box-shadow: var(--lift);
+  font-size: var(--t-base);
+  color: var(--text);
+  max-width: 520px;
+  animation: settle-in var(--t-med) var(--ease-spring) both;
+  pointer-events: auto;
+}
+
+.toast .tick {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--true);
+}
+
+.toast.bad .tick {
+  background: var(--cut);
+}
+
+.toast.busy .tick {
+  background: var(--lume);
+  animation: pulse-ring 1.1s infinite;
+}
+
+/* ==========================================================================
+   working overlay
+   ========================================================================== */
+
+.working {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bench-0) 76%, transparent);
+  backdrop-filter: blur(3px);
+  z-index: 80;
+}
+
+.working-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 34px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  box-shadow: var(--lift);
+  min-width: 260px;
+}
+
+.working-card .what {
+  font-size: var(--t-md);
+  font-weight: 500;
+}
+
+.bar {
+  width: 200px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--bench-3);
+  overflow: hidden;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--lume);
+  border-radius: 99px;
+  transition: width var(--t-med) var(--ease-settle);
+}
+
+/* ==========================================================================
+   narrow screens
+   --------------------------------------------------------------------------
+   The bench is a desktop instrument. On a phone it collapses to one column at
+   a time, switched from the rail, because a 3-pane workbench on a 390px
+   screen is worse than useless.
+   ========================================================================== */
+
+@media (max-width: 1180px) {
+  :root {
+    --inspector-w: 330px;
+    --ribbon-w: 132px;
+  }
+}
+
+@media (max-width: 900px) {
+  .main,
+  .main.no-doc {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .ribbon,
+  .inspector {
+    display: none;
+  }
+
+  .main[data-mobile="ribbon"] .ribbon,
+  .main[data-mobile="inspector"] .inspector {
+    display: flex;
+    border: none;
+  }
+
+  .main[data-mobile="ribbon"] .stage,
+  .main[data-mobile="inspector"] .stage {
+    display: none;
+  }
+
+  .rail {
+    grid-row: 2;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--rule);
+    padding: 4px 6px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .rail-btn {
+    margin: 0 1px;
+    flex: none;
+    min-width: 62px;
+  }
+
+  .rail-btn.on::before {
+    left: 6px;
+    right: 6px;
+    top: -4px;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+  }
+
+  .rail-sep {
+    width: 1px;
+    height: auto;
+    margin: 6px 5px;
+  }
+
+  .stage {
+    padding: 16px;
+  }
+
+  .doc-title .facts {
+    display: none;
+  }
+
+  .meter .bytes {
+    display: none;
+  }
+}

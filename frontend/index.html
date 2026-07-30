@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-bench="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Clause - a PDF workbench that never uploads your file</title>
+    <meta
+      name="description"
+      content="Merge, split, sign, redact and read PDFs in your browser. Your file stays on your device, there is no account, and nothing is paywalled."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0d2038" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+
+    <!--
+      The bench remembers whether the lamp was on. Reading it before first
+      paint stops the dark theme flashing white on reload.
+    -->
+    <script>
+      try {
+        var saved = localStorage.getItem("clause.bench");
+        if (saved === "light" || saved === "dark") {
+          document.documentElement.dataset.bench = saved;
+        } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+          document.documentElement.dataset.bench = "light";
+        }
+      } catch (e) {
+        /* private mode, storage blocked: the dark default is fine */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      Clause does all of its work in your browser, so it needs JavaScript
+      switched on. Nothing is sent to a server either way.
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

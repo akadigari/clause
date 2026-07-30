@@ -9,11 +9,19 @@ __pycache__/
 # node
 frontend/node_modules/
 node_modules/
-frontend/.next/
-frontend/next-env.d.ts
 *.tsbuildinfo
 
-# chroma / vector db storage (the app uses an in-memory client today, but
+# build output
+frontend/dist/
+
+# pdf.js ships its fonts, character maps and image decoders as separate files
+# that it fetches at runtime. scripts/copy-pdfjs-assets.mjs copies them out of
+# node_modules before every dev run and every build, so they are generated
+# output rather than source. About 4MB, and always identical to whatever
+# version of pdfjs-dist is installed.
+frontend/public/pdfjs/
+
+# chroma / vector db storage (the backend uses an in-memory client today, but
 # ignore this in case a persistent store is ever added)
 .chroma/
 chroma_db/

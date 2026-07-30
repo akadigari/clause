@@ -1,0 +1,586 @@
+/* ==========================================================================
+   Clause: the bench
+   --------------------------------------------------------------------------
+   The idea: a machinist's light bench, not a document. The chrome is cold
+   graphite and stays thin. The page is the only pure white in the room and
+   carries the visual weight. Amber is used as a light source (it glows,
+   pools, and falls off) rather than as a flat brand colour.
+
+   Two benches: dark (lamp off, the default) and light (lamp on). Both are
+   real designs, not a filter over each other.
+   ========================================================================== */
+
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/ibm-plex-sans";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+:root {
+  /* -- type ------------------------------------------------------------- */
+  --display: "Bricolage Grotesque Variable", "Bricolage Grotesque", Georgia, serif;
+  --sans: "IBM Plex Sans Variable", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --t-xs: 10.5px;
+  --t-sm: 12px;
+  --t-base: 13.5px;
+  --t-md: 15px;
+  --t-lg: 18px;
+  --t-xl: 24px;
+  --t-hero: clamp(2.6rem, 7vw, 5.4rem);
+
+  --track-label: 0.09em;
+
+  /* -- shape ------------------------------------------------------------ */
+  --r-1: 4px;
+  --r-2: 8px;
+  --r-3: 14px;
+  --rail-w: 68px;
+  --ribbon-w: 168px;
+  --inspector-w: 400px;
+
+  /* -- motion ----------------------------------------------------------- */
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --t-fast: 120ms;
+  --t-med: 260ms;
+  --t-slow: 520ms;
+}
+
+/* -- dark bench: lamp off (default) ------------------------------------- */
+:root,
+html[data-bench="dark"] {
+  color-scheme: dark;
+
+  --bench-0: #08172b;
+  --bench-1: #0d2038;
+  --bench-2: #142b47;
+  --bench-3: #1c3a5c;
+  --rule: #24466b;
+  --rule-hi: #35608c;
+
+  --text: #eaf2fa;
+  --text-2: #a6bed6;
+  --text-3: #718ca9;
+
+  --paper: #ffffff;
+  --paper-ink: #13294b;
+  --page-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 46px -12px rgba(2, 10, 22, 0.78);
+
+  --lume: #4b9cd3;
+  --lume-hi: #7fbce6;
+  --lume-wash: rgba(75, 156, 211, 0.15);
+  --lume-edge: rgba(75, 156, 211, 0.45);
+  --lume-ink: #06192e;
+
+  --mark: rgba(107, 178, 226, 0.42);
+  --mark-solid: #6bb2e2;
+
+  --cut: #ff6250;
+  --cut-wash: rgba(255, 98, 80, 0.14);
+  --true: #4ade9b;
+  --true-wash: rgba(74, 222, 155, 0.13);
+
+  --sunk: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.045), 0 10px 26px -14px rgba(0, 0, 0, 0.85);
+}
+
+/* -- light bench: lamp on ------------------------------------------------ */
+html[data-bench="light"] {
+  color-scheme: light;
+
+  --bench-0: #d5e4f2;
+  --bench-1: #e9f1f9;
+  --bench-2: #ffffff;
+  --bench-3: #dfebf6;
+  --rule: #c4d8ea;
+  --rule-hi: #a3c0da;
+
+  --text: #13294b;
+  --text-2: #3c5878;
+  --text-3: #6a85a3;
+
+  --paper: #ffffff;
+  --paper-ink: #13294b;
+  --page-shadow: 0 1px 2px rgba(19, 41, 75, 0.16), 0 16px 38px -14px rgba(19, 41, 75, 0.3);
+
+  /* Carolina blue is a light colour, so on a white bench the interface uses a
+     darker cut of it. #4b9cd3 on white is about 2.4:1, which fails on text;
+     this sits above 5:1 and still reads as the same blue. */
+  --lume: #1b6ca8;
+  --lume-hi: #145a8f;
+  --lume-wash: rgba(75, 156, 211, 0.16);
+  --lume-edge: rgba(27, 108, 168, 0.4);
+  --lume-ink: #ffffff;
+
+  --mark: rgba(75, 156, 211, 0.45);
+  --mark-solid: #4b9cd3;
+
+  --cut: #c22d18;
+  --cut-wash: rgba(194, 45, 24, 0.1);
+  --true: #08774a;
+  --true-wash: rgba(8, 119, 74, 0.1);
+
+  --sunk: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 24px -16px rgba(20, 30, 50, 0.4);
+}
+
+/* ==========================================================================
+   reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bench-1);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--t-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--lume);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+::selection {
+  background: var(--lume);
+  color: var(--lume-ink);
+}
+
+/* Scrollbars are part of a tool's chrome, so they get styled like it. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-hi) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--rule-hi);
+  background-clip: content-box;
+}
+
+/* ==========================================================================
+   shared atoms
+   ========================================================================== */
+
+/* Numbers are data, so they get the data face. Page counts, byte sizes,
+   dimensions, DPI, coordinates: all mono, everywhere, no exceptions. */
+.num {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "zero" 1;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.hr {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+
+/* -- buttons ------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  color: var(--text);
+  font-size: var(--t-base);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background var(--t-fast) var(--ease-settle),
+    border-color var(--t-fast) var(--ease-settle),
+    transform var(--t-fast) var(--ease-settle);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--bench-3);
+  border-color: var(--rule-hi);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: var(--lume);
+  border-color: var(--lume);
+  color: var(--lume-ink);
+  font-weight: 600;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: var(--lume-hi);
+  border-color: var(--lume-hi);
+}
+
+.btn.danger {
+  color: var(--cut);
+  border-color: color-mix(in srgb, var(--cut) 40%, var(--rule));
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: var(--cut-wash);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-2);
+}
+
+.btn.ghost:hover:not(:disabled) {
+  background: var(--bench-3);
+  color: var(--text);
+}
+
+.btn.sm {
+  height: 27px;
+  padding: 0 10px;
+  font-size: var(--t-sm);
+}
+
+.btn.wide {
+  width: 100%;
+}
+
+/* -- fields -------------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.field > .label {
+  color: var(--text-2);
+}
+
+.input,
+.select,
+textarea.input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  color: var(--text);
+  font-size: var(--t-base);
+  box-shadow: var(--sunk);
+  transition: border-color var(--t-fast) var(--ease-settle);
+  width: 100%;
+}
+
+textarea.input {
+  height: auto;
+  padding: 9px 11px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input:focus,
+.select:focus,
+textarea.input:focus {
+  border-color: var(--lume-edge);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--lume-wash);
+}
+
+.input.num,
+.select {
+  font-family: var(--mono);
+}
+
+.select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-3) 50%),
+    linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 15px,
+    calc(100% - 10px) 15px;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.row > .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* -- range slider: reads like a machine dial ----------------------------- */
+
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 22px;
+  background: transparent;
+}
+
+.range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--rule);
+}
+
+.range::-moz-range-track {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--rule);
+}
+
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--lume);
+  border: 2px solid var(--bench-1);
+  box-shadow: 0 0 0 1px var(--lume-edge);
+  transition: box-shadow var(--t-fast);
+}
+
+.range::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid var(--bench-1);
+  background: var(--lume);
+  box-shadow: 0 0 0 1px var(--lume-edge);
+}
+
+.range:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px var(--lume-wash);
+}
+
+/* -- toggle: a physical switch ------------------------------------------- */
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-size: var(--t-base);
+  color: var(--text-2);
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .track {
+  width: 32px;
+  height: 18px;
+  border-radius: 99px;
+  background: var(--bench-3);
+  border: 1px solid var(--rule);
+  position: relative;
+  transition: background var(--t-med) var(--ease-settle);
+  flex: none;
+}
+
+.switch .track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-3);
+  transition:
+    transform var(--t-med) var(--ease-spring),
+    background var(--t-med) var(--ease-settle);
+}
+
+.switch input:checked + .track {
+  background: var(--lume-wash);
+  border-color: var(--lume-edge);
+}
+
+.switch input:checked + .track::after {
+  transform: translateX(14px);
+  background: var(--lume);
+}
+
+.switch input:focus-visible + .track {
+  outline: 2px solid var(--lume);
+  outline-offset: 2px;
+}
+
+/* -- notes and warnings -------------------------------------------------- */
+
+.note {
+  border-radius: var(--r-2);
+  padding: 10px 12px;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--text-2);
+  background: var(--bench-1);
+  border: 1px solid var(--rule);
+}
+
+.note.warn {
+  background: var(--lume-wash);
+  border-color: var(--lume-edge);
+  color: var(--text);
+}
+
+.note.cut {
+  background: var(--cut-wash);
+  border-color: color-mix(in srgb, var(--cut) 38%, transparent);
+  color: var(--text);
+}
+
+.note strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ==========================================================================
+   motion
+   ========================================================================== */
+
+@keyframes lume-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-14deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(220%) skewX(-14deg);
+    opacity: 0;
+  }
+}
+
+@keyframes settle-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes mark-wipe {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--lume-edge);
+  }
+  70% {
+    box-shadow: 0 0 0 9px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settle {
+  animation: settle-in var(--t-med) var(--ease-settle) both;
+}
+
+/* Everything above is decoration on top of a working interface, so all of it
+   can be switched off without losing information. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

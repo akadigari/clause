@@ -1,0 +1,630 @@
+/* ==========================================================================
+   Clause: marks on the page, and the tool panels
+   ========================================================================== */
+
+/* -- marks drawn onto the stage ------------------------------------------ */
+
+.mark {
+  position: absolute;
+  border-radius: 2px;
+  cursor: pointer;
+  transition:
+    box-shadow var(--t-fast),
+    transform var(--t-fast) var(--ease-spring);
+}
+
+.mark-redact {
+  background: #000;
+  border: 1px solid var(--cut);
+  animation: settle-in var(--t-fast) var(--ease-settle) both;
+}
+
+.mark-redact:hover {
+  box-shadow: 0 0 0 3px var(--cut-wash);
+  transform: scale(1.01);
+}
+
+.mark-stamp {
+  background: var(--lume-wash);
+  border: 1px dashed var(--lume);
+}
+
+.mark-drawing {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid var(--cut);
+  pointer-events: none;
+}
+
+.stage-hint {
+  position: sticky;
+  bottom: 46px;
+  margin: 10px 0 0;
+  padding: 6px 13px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--bench-2) 92%, transparent);
+  border: 1px solid var(--lume-edge);
+  backdrop-filter: blur(8px);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+  color: var(--text-2);
+  z-index: 6;
+  animation: settle-in var(--t-med) var(--ease-settle) both;
+}
+
+/* ==========================================================================
+   tool panels
+   ========================================================================== */
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  color: var(--text-2);
+  font-size: var(--t-sm);
+  transition:
+    border-color var(--t-fast),
+    color var(--t-fast),
+    background var(--t-fast);
+}
+
+.pill:hover:not(:disabled) {
+  border-color: var(--rule-hi);
+  color: var(--text);
+}
+
+.pill.on {
+  border-color: var(--lume);
+  background: var(--lume-wash);
+  color: var(--text);
+}
+
+.pill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* -- the selection readout at the top of a panel ------------------------- */
+
+.selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  margin-bottom: 15px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  font-family: var(--mono);
+  font-size: var(--t-sm);
+}
+
+.selection b {
+  color: var(--lume);
+  font-weight: 500;
+}
+
+.selection.empty b {
+  color: var(--text-3);
+}
+
+/* -- a stack of results, such as split parts ----------------------------- */
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  overflow: hidden;
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  background: var(--bench-1);
+  font-size: var(--t-sm);
+}
+
+.result .rname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+}
+
+.result .rsize {
+  font-family: var(--mono);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- file list for merging ----------------------------------------------- */
+
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-2);
+  background: var(--bench-1);
+  margin-bottom: 6px;
+  font-size: var(--t-sm);
+}
+
+.file-row .fname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-row .fpages {
+  font-family: var(--mono);
+  color: var(--text-3);
+  font-size: var(--t-xs);
+}
+
+.file-row .handle {
+  color: var(--text-3);
+  cursor: grab;
+  font-family: var(--mono);
+  letter-spacing: -2px;
+}
+
+/* -- the signature pad ---------------------------------------------------- */
+
+.sigpad {
+  position: relative;
+  border: 1px dashed var(--rule-hi);
+  border-radius: var(--r-2);
+  background: var(--paper);
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.sigpad canvas {
+  display: block;
+  width: 100%;
+  height: 150px;
+}
+
+/* A ruled baseline, like the line on a form you sign above. */
+.sigpad::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 38px;
+  height: 1px;
+  background: var(--rule);
+  pointer-events: none;
+}
+
+.sigpad .prompt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: #b9bfc9;
+  pointer-events: none;
+}
+
+.sigpad.inked .prompt {
+  display: none;
+}
+
+/* -- the honest note about what a tool costs you -------------------------- */
+
+.tradeoff {
+  border-left: 2px solid var(--lume);
+  padding: 2px 0 2px 11px;
+  margin: 14px 0;
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.tradeoff b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* -- size comparison after a shrink -------------------------------------- */
+
+.sizes {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  margin: 12px 0;
+}
+
+.sizes .before {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+.sizes .after {
+  font-size: var(--t-lg);
+  color: var(--text);
+}
+
+.sizes .change {
+  font-size: var(--t-sm);
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--true-wash);
+  color: var(--true);
+}
+
+.sizes .change.worse {
+  background: var(--cut-wash);
+  color: var(--cut);
+}
+
+/* ==========================================================================
+   the Ask panel
+   ========================================================================== */
+
+.ask {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.ask-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.ask-empty {
+  margin: auto 0;
+  text-align: center;
+  padding: 10px 4px;
+}
+
+.ask-empty h3 {
+  font-family: var(--display);
+  font-variation-settings: "wdth" 88, "opsz" 22;
+  font-size: var(--t-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 7px;
+}
+
+.ask-empty p {
+  margin: 0 0 16px;
+  color: var(--text-3);
+  font-size: var(--t-sm);
+  line-height: 1.55;
+}
+
+.suggests {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.suggest {
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  color: var(--text-2);
+  font-size: var(--t-sm);
+  transition:
+    border-color var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast) var(--ease-settle);
+}
+
+.suggest:hover {
+  border-color: var(--lume-edge);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.turn {
+  animation: settle-in var(--t-med) var(--ease-settle) both;
+}
+
+.turn.you {
+  align-self: flex-end;
+  max-width: 88%;
+  padding: 8px 13px;
+  border-radius: 13px 13px 3px 13px;
+  background: var(--lume);
+  color: var(--lume-ink);
+  font-size: var(--t-base);
+  font-weight: 500;
+}
+
+.turn.it {
+  align-self: stretch;
+  padding: 12px 14px;
+  border-radius: 13px 13px 13px 3px;
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  font-size: var(--t-base);
+  line-height: 1.6;
+}
+
+.turn.it.abstained {
+  border-color: var(--lume-edge);
+  background: var(--lume-wash);
+}
+
+.turn.bad {
+  align-self: stretch;
+  padding: 10px 13px;
+  border-radius: var(--r-2);
+  border: 1px solid color-mix(in srgb, var(--cut) 35%, transparent);
+  background: var(--cut-wash);
+  font-size: var(--t-sm);
+}
+
+.turn-mode {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+  color: var(--text-3);
+}
+
+.turn-mode.abstain {
+  color: var(--lume);
+}
+
+.turn-mode.found {
+  color: var(--true);
+}
+
+.turn-body {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* -- citations ----------------------------------------------------------- */
+
+.receipts {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--rule);
+}
+
+.receipts > .label {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.receipt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 11px;
+  margin-bottom: 6px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-2);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
+}
+
+.receipt:hover {
+  border-color: var(--lume);
+  background: var(--lume-wash);
+}
+
+.receipt .where {
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.04em;
+  color: var(--lume);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.receipt .quote {
+  color: var(--text-2);
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* -- the red flags scan --------------------------------------------------- */
+
+.flag {
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  background: var(--bench-1);
+  padding: 11px 13px;
+  margin-bottom: 8px;
+}
+
+.flag.sev-high {
+  border-left-color: var(--cut);
+}
+.flag.sev-medium {
+  border-left-color: var(--lume);
+}
+.flag.sev-low {
+  border-left-color: var(--text-3);
+}
+.flag.sev-info {
+  border-left-color: var(--rule-hi);
+}
+
+.flag-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.sev {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 99px;
+  border: 1px solid currentColor;
+}
+
+.sev.sev-high {
+  color: var(--cut);
+}
+.sev.sev-medium {
+  color: var(--lume);
+}
+.sev.sev-low,
+.sev.sev-info {
+  color: var(--text-3);
+}
+
+.flag-name {
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.flag-what {
+  font-size: var(--t-sm);
+  color: var(--text-2);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+
+/* -- the composer --------------------------------------------------------- */
+
+.composer {
+  border-top: 1px solid var(--rule);
+  padding: 11px 13px;
+  padding-bottom: max(11px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bench-2);
+}
+
+.composer-row {
+  display: flex;
+  gap: 7px;
+  align-items: flex-end;
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 38px;
+  max-height: 140px;
+  resize: none;
+  padding: 8px 11px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  color: var(--text);
+  font-size: var(--t-base);
+  line-height: 1.45;
+  box-shadow: var(--sunk);
+}
+
+.composer textarea:focus {
+  outline: none;
+  border-color: var(--lume-edge);
+  box-shadow: 0 0 0 3px var(--lume-wash);
+}
+
+.composer .send {
+  height: 38px;
+  width: 38px;
+  flex: none;
+  border-radius: var(--r-2);
+  background: var(--lume);
+  color: var(--lume-ink);
+  display: grid;
+  place-items: center;
+  transition: background var(--t-fast);
+}
+
+.composer .send:hover:not(:disabled) {
+  background: var(--lume-hi);
+}
+
+.composer .send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.composer .under {
+  font-size: var(--t-xs);
+  font-family: var(--mono);
+  color: var(--text-3);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* -- the optional key --------------------------------------------------- */
+
+.keybox {
+  border-radius: var(--r-2);
+  border: 1px solid var(--rule);
+  background: var(--bench-1);
+  padding: 12px 13px;
+  margin-bottom: 15px;
+}
+
+.keybox h4 {
+  margin: 0 0 6px;
+  font-size: var(--t-base);
+  font-weight: 600;
+}
+
+.keybox p {
+  margin: 0 0 10px;
+  font-size: var(--t-sm);
+  color: var(--text-2);
+  line-height: 1.55;
+}
