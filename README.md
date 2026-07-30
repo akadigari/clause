@@ -2,6 +2,8 @@
 
 **A PDF workbench that never uploads your file.**
 
+**[clause-mauve.vercel.app](https://clause-mauve.vercel.app)**
+
 Merge, split, turn, sign, redact, shrink and convert PDFs, and ask questions
 about what they say. All of it runs in the browser tab. There is no account,
 nothing comes out watermarked, and no feature is held back for a paid plan,
@@ -115,7 +117,16 @@ npm run build
 ```
 
 The output in `frontend/dist` is plain files. Serve it from anywhere, including
-GitHub Pages, a USB stick, or `file://`.
+Vercel, GitHub Pages, a USB stick, or `file://`. The build uses a relative base
+so the same output works from a domain root or a project subpath without
+rebuilding.
+
+Two deploy paths are set up and neither needs a server:
+
+- **Vercel** via `frontend/vercel.json`, which is what the link above runs on.
+- **GitHub Pages** via `.github/workflows/deploy.yml`, which typechecks, tests
+  and builds on every push. It needs Pages turned on in the repository settings
+  with the source set to "GitHub Actions" before it has anywhere to publish.
 
 ```bash
 npm test          # 430 tests
