@@ -127,10 +127,11 @@ rebuilding.
 
 Two deploy paths are set up and neither needs a server:
 
-- **Vercel** via `frontend/vercel.json`, which is what the link above runs on.
-- **GitHub Pages** via `.github/workflows/deploy.yml`, which typechecks, tests
-  and builds on every push. It needs Pages turned on in the repository settings
-  with the source set to "GitHub Actions" before it has anywhere to publish.
+- **Vercel** via `frontend/vercel.json`.
+- **GitHub Pages** via `.github/workflows/deploy.yml`, which typechecks, runs
+  the tests, builds, and publishes on every push to `master`.
+
+Both are live, and both build from the same commit, so they do not drift.
 
 ```bash
 npm test          # 430 tests
