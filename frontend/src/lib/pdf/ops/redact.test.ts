@@ -27,6 +27,7 @@
  */
 
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { viewSize } from "../geometry";
@@ -58,7 +59,11 @@ const SOFT_HYPHEN = String.fromCharCode(0x00ad);
 const LIGATURE_FI = String.fromCharCode(0xfb01);
 const NBSP = String.fromCharCode(0x00a0);
 
-const SAMPLE_LEASE = "/Users/kadigari/Documents/ARKPrograms/clause/backend/samples/sample-apartment-lease.pdf";
+// Relative to this file, not to whoever's machine wrote it. An absolute path
+// here passes locally and fails on every other computer, including CI.
+const SAMPLE_LEASE = fileURLToPath(
+  new URL("../../../../../backend/samples/sample-apartment-lease.pdf", import.meta.url),
+);
 
 function box(page: number, x = 10, y = 10, width = 100, height = 20): RedactBox {
   return { page, x, y, width, height };

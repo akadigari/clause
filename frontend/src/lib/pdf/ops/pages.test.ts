@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { blankPdf, loadPdf, pageBoxOf, PdfOpError, pdfLib, savePdf } from "./common";
@@ -45,7 +46,11 @@ async function rotationOf(bytes: Uint8Array, index: number): Promise<number> {
   return pageBoxOf(doc.getPage(index)).rotation;
 }
 
-const SAMPLE = "/Users/kadigari/Documents/ARKPrograms/clause/backend/samples/sample-apartment-lease.pdf";
+// Relative to this file, not to whoever's machine wrote it. An absolute path
+// here passes locally and fails on every other computer, including CI.
+const SAMPLE = fileURLToPath(
+  new URL("../../../../../backend/samples/sample-apartment-lease.pdf", import.meta.url),
+);
 
 describe("rotatePages", () => {
   it("composes through all four quadrants and folds 360 back to 0", async () => {
