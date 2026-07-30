@@ -12,7 +12,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Landing from "./components/Landing";
 import Rail, { type ToolId } from "./components/Rail";
 import Ribbon from "./components/Ribbon";
-import Stage, { type StageMark, type StageMode } from "./components/Stage";
+import Stage, {
+  lineKey,
+  type OpenEdit,
+  type StageMark,
+  type StageMode,
+  type TextLine,
+} from "./components/Stage";
+import type { PendingEdit } from "./components/panels/EditPanel";
 import Topbar from "./components/Topbar";
 import Toasts from "./components/Toasts";
 import Inspector from "./components/Inspector";
@@ -33,6 +40,16 @@ export default function App() {
   const [cite, setCite] = useState<Cite | null>(null);
   const [mobilePane, setMobilePane] = useState<"stage" | "ribbon" | "inspector">("stage");
 
+  // Text editing. `open` is the line being retyped right now, `pending` are the
+  // ones already retyped and waiting to be written into the file.
+  const [open, setOpen] = useState<OpenEdit | null>(null);
+  const [pending, setPending] = useState<PendingEdit[]>([]);
+  const [editStyle, setEditStyle] = useState({
+    color: "#000000",
+    background: "#ffffff",
+    transparent: true,
+  });
+
   // A new document invalidates everything that referred to the old one.
   const docKey = doc ? `${doc.name}:${doc.version}` : null;
   useEffect(() => {
@@ -40,6 +57,8 @@ export default function App() {
     setCuts([]);
     setMarks([]);
     setCite(null);
+    setOpen(null);
+    setPending([]);
     setCurrent((page) => (doc ? Math.min(page, doc.pageCount - 1) : 0));
   }, [docKey, doc]);
 
@@ -58,7 +77,51 @@ export default function App() {
    * What the page overlay does right now. Only the redaction tool wants
    * drags, so everything else leaves the text selectable.
    */
+  /** Park whatever is open into the pending list, keeping any real change. */
+  const keepOpen = useCallback(() => {
+    setOpen((current) => {
+      if (!current) return null;
+      setPending((list) => [
+        ...list.filter((p) => p.key !== current.key),
+        { ...current, color: editStyle.color, background: bg(editStyle) },
+      ]);
+      return null;
+    });
+  }, [editStyle]);
+
+  const pickLine = useCallback(
+    (page: number, line: TextLine | null) => {
+      keepOpen();
+      if (!line) return;
+      const key = lineKey(page, line);
+      const already = pending.find((p) => p.key === key);
+      setOpen({
+        page,
+        key,
+        rect: { x: line.x, y: line.y, width: line.width, height: line.height },
+        baseline: line.baseline,
+        original: line.text,
+        text: already?.text ?? line.text,
+        fontSize: already?.fontSize ?? line.fontSize,
+        // A line squeezed to fit its column has to stay squeezed, or the
+        // replacement comes out wider than the space it is going into.
+        squeeze: line.pieces[0]?.squeeze ?? 1,
+      });
+    },
+    [keepOpen, pending],
+  );
+
   const stageMode: StageMode = useMemo(() => {
+    if (tool === "edit") {
+      return {
+        kind: "edit",
+        hint: "Click any line to retype it. The old words are covered, not removed.",
+        open,
+        doneKeys: pending.filter((p) => p.text !== p.original).map((p) => p.key),
+        onPick: pickLine,
+        onType: (text: string) => setOpen((c) => (c ? { ...c, text } : c)),
+      };
+    }
     if (tool === "redact") {
       return {
         kind: "box",
@@ -67,7 +130,7 @@ export default function App() {
       };
     }
     return { kind: "read" };
-  }, [tool, addMark]);
+  }, [tool, addMark, open, pending, pickLine]);
 
   const goTo = useCallback((index: number) => {
     setCurrent(index);
@@ -180,6 +243,25 @@ export default function App() {
               current={current}
               onGoTo={goTo}
               onShowCitation={showCitation}
+              extra={
+                tool === "edit"
+                  ? {
+                      open,
+                      pending,
+                      style: editStyle,
+                      onStyle: setEditStyle,
+                      onSizeChange: (size: number) =>
+                        setOpen((c) => (c ? { ...c, fontSize: size } : c)),
+                      onKeep: keepOpen,
+                      onDrop: (key: string) =>
+                        setPending((list) => list.filter((p) => p.key !== key)),
+                      onClearAll: () => {
+                        setPending([]);
+                        setOpen(null);
+                      },
+                    }
+                  : undefined
+              }
             />
           </>
         ) : (
@@ -269,4 +351,15 @@ function StatusBar({
       <span className="grow">nothing has been uploaded</span>
     </footer>
   );
+}
+
+/**
+ * What to paint behind replacement text.
+ *
+ * "Match the paper" is the honest default because nothing here samples the
+ * page: on white paper white is right, and anywhere else the person has to
+ * pick the colour themselves.
+ */
+function bg(style: { background: string; transparent: boolean }): string {
+  return style.transparent ? "#ffffff" : style.background;
 }

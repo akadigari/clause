@@ -12,7 +12,7 @@
  * so nothing downstream has to know about zoom or screen pixels.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { OpenDoc } from "../lib/session";
 import {
@@ -23,7 +23,22 @@ import {
   type TextPiece,
 } from "../lib/pdf/viewer";
 import { rectFromDrag, screenToView, type Point, type Rect } from "../lib/pdf/geometry";
+import { groupIntoLines, type TextLine } from "../lib/pdf/textblocks";
 import { IconMinus, IconPlus } from "./Icons";
+
+/**
+ * Editing works a line at a time, not a paragraph at a time.
+ *
+ * Nothing in a PDF reflows, so there is no honest way to let someone retype a
+ * wrapped bullet and have it re-wrap. A line is the largest piece that can be
+ * replaced and still land exactly where the old words were.
+ */
+export type { TextLine };
+
+/** Stable across repaints, since lines are recomputed on every render. */
+export function lineKey(page: number, line: TextLine): string {
+  return `${page}:${Math.round(line.x)}:${Math.round(line.y)}`;
+}
 
 export type StageMark = {
   id: string;
@@ -32,10 +47,34 @@ export type StageMark = {
   kind: "redact" | "stamp";
 };
 
+/** A block the user is currently retyping, held by App while it is open. */
+export type OpenEdit = {
+  page: number;
+  /** Which line, so the right box stays highlighted across repaints. */
+  key: string;
+  rect: Rect;
+  /** Where the old words sat, measured down from the top of rect. */
+  baseline: number;
+  original: string;
+  text: string;
+  fontSize: number;
+  squeeze: number;
+};
+
 export type StageMode =
   | { kind: "read" }
   | { kind: "box"; hint: string; onBox: (page: number, rect: Rect) => void }
-  | { kind: "point"; hint: string; onPoint: (page: number, point: Point) => void };
+  | { kind: "point"; hint: string; onPoint: (page: number, point: Point) => void }
+  | {
+      kind: "edit";
+      hint: string;
+      /** The block being retyped, if any. */
+      open: OpenEdit | null;
+      /** Lines already changed, so they can be shown as done. */
+      doneKeys: string[];
+      onPick: (page: number, line: TextLine | null) => void;
+      onType: (text: string) => void;
+    };
 
 type Props = {
   doc: OpenDoc;
@@ -58,6 +97,8 @@ export default function Stage({ doc, page, mode, marks, cite, onRemoveMark }: Pr
   const stage = useRef<HTMLDivElement>(null);
   const sheet = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  /** The render currently using the canvas, so the next one can wait for it. */
+  const inflight = useRef<Promise<void> | null>(null);
 
   const shape = doc.pages[page] ?? { width: 612, height: 792, rotation: 0 };
 
@@ -72,24 +113,56 @@ export default function Stage({ doc, page, mode, marks, cite, onRemoveMark }: Pr
     setFitted(true);
   }, [fitted, shape.width]);
 
+  // Read the page's text.
+  //
+  // Deliberately separate from painting. Text extraction never touches the
+  // canvas, so making it queue behind a render meant that any hiccup in
+  // painting, and every cancelled render React starts and throws away in
+  // development, left the page with no text layer, no selectable words and
+  // nothing to click in the editor. It also does not depend on zoom, so
+  // zooming no longer re-reads the whole page.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const proxy = await doc.pdf.getPage(page + 1);
+        const got = await pageTextPieces(proxy);
+        if (!cancelled) setPieces(got);
+      } catch (err) {
+        if (!isCancelled(err)) console.warn("[clause] could not read the page text", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [doc, page]);
+
   // Paint the page.
   useEffect(() => {
     let cancelled = false;
     let handle: RenderHandle | null = null;
 
-    void (async () => {
+    const run = (async () => {
       try {
+        // pdf.js will not paint two things onto one canvas at the same time,
+        // and the second render's promise then never settles, which used to
+        // leave the text layer empty forever. React runs this effect twice on
+        // mount in development on purpose, so waiting for whatever was already
+        // drawing here is not an edge case, it is the normal path.
+        const previous = inflight.current;
+        if (previous) await previous.catch(() => undefined);
+        if (cancelled) return;
+
         const proxy = await doc.pdf.getPage(page + 1);
         const target = canvas.current;
         if (cancelled || !target) return;
         handle = renderPage(proxy, target, zoom);
         await handle.done;
-        if (cancelled) return;
-        setPieces(await pageTextPieces(proxy));
       } catch (err) {
         if (!isCancelled(err)) console.warn("[clause] page render failed", err);
       }
     })();
+    inflight.current = run;
 
     return () => {
       cancelled = true;
@@ -124,6 +197,14 @@ export default function Stage({ doc, page, mode, marks, cite, onRemoveMark }: Pr
 
   const interactive = mode.kind !== "read";
   const pageMarks = marks.filter((m) => m.page === page);
+
+  // Only worked out in edit mode, and only when the text of the page has
+  // actually changed, because grouping every run runs on each repaint
+  // otherwise.
+  const lines = useMemo(
+    () => (mode.kind === "edit" ? groupIntoLines(pieces) : []),
+    [mode.kind, pieces],
+  );
 
   return (
     <section className="stage" ref={stage} aria-label="Page">
@@ -166,6 +247,55 @@ export default function Stage({ doc, page, mode, marks, cite, onRemoveMark }: Pr
           />
         ))}
 
+        {/* Edit mode: outline every block so it is obvious what can be
+            changed, the way a person expects from an editor. */}
+        {mode.kind === "edit" &&
+          lines.map((line) => {
+            const key = lineKey(page, line);
+            const isOpen = mode.open?.key === key;
+            const isDone = mode.doneKeys.includes(key);
+            return (
+              <button
+                type="button"
+                key={key}
+                className={`textbox ${isOpen ? "on" : ""} ${isDone ? "done" : ""}`}
+                style={{
+                  left: line.x * zoom,
+                  top: line.y * zoom,
+                  width: line.width * zoom,
+                  height: line.height * zoom,
+                }}
+                title={isDone ? "Changed. Click to edit again." : "Click to retype this line"}
+                aria-label={`Edit line: ${line.text.slice(0, 60)}`}
+                onClick={() => mode.onPick(page, line)}
+              />
+            );
+          })}
+
+        {/* The box being retyped sits exactly where the words were, at the
+            same size, so what you type looks like what you will get. */}
+        {mode.kind === "edit" && mode.open && mode.open.page === page && (
+          <textarea
+            className="textbox-input"
+            autoFocus
+            value={mode.open.text}
+            onChange={(e) => mode.onType(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") mode.onPick(page, null);
+              e.stopPropagation();
+            }}
+            style={{
+              left: mode.open.rect.x * zoom,
+              top: mode.open.rect.y * zoom,
+              width: Math.max(mode.open.rect.width * zoom, 40),
+              height: Math.max(mode.open.rect.height * zoom, mode.open.fontSize * zoom * 1.3),
+              fontSize: mode.open.fontSize * zoom,
+              lineHeight: 1.22,
+            }}
+            aria-label="Replacement text"
+          />
+        )}
+
         {/* The rectangle currently being dragged out. */}
         {drag && (
           <div
@@ -179,7 +309,18 @@ export default function Stage({ doc, page, mode, marks, cite, onRemoveMark }: Pr
           />
         )}
 
-        {interactive && (
+        {/* Edit mode draws its own clickable boxes, so it must not sit under a
+            full-page overlay that would swallow those clicks. Clicking bare
+            paper closes whatever is open. */}
+        {mode.kind === "edit" && (
+          <div
+            className="overlay"
+            style={{ pointerEvents: "none" }}
+            aria-hidden="true"
+          />
+        )}
+
+        {interactive && mode.kind !== "edit" && (
           <div
             className="overlay grab"
             onPointerDown={(event) => {

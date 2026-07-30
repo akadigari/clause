@@ -58,7 +58,7 @@ async function describe(pdf: PDFDocumentProxy): Promise<PageShape[]> {
       height: viewport.height,
       rotation: page.rotate ?? 0,
     });
-    page.cleanup();
+    // No cleanup: page objects are shared with the viewer, see allPageText.
   }
   return shapes;
 }
@@ -69,6 +69,8 @@ export function useSession() {
   const [notes, setNotes] = useState<Note[]>([]);
   const past = useRef<Snapshot[]>([]);
   const future = useRef<Snapshot[]>([]);
+  /** What is open right now, so it can be closed without a state updater. */
+  const live = useRef<OpenDoc | null>(null);
   const version = useRef(0);
   const [, forceRender] = useState(0);
 
@@ -104,12 +106,19 @@ export function useSession() {
         pages,
         version: version.current,
       };
-      setDoc((prev) => {
-        // Shut the previous document's worker down. Skipping this leaks a
-        // worker thread per edit, and every edit reopens the document.
-        void prev?.close().catch(() => undefined);
-        return next;
-      });
+      // Shut the previous document's worker down. Skipping it leaks a worker
+      // per edit, and every edit reopens the document.
+      //
+      // This deliberately does NOT live inside the setDoc updater. A state
+      // updater has to be pure: React calls it more than once in development
+      // to check that it is, and on the second call it passes the value it
+      // just stored. Closing "the previous document" in there therefore closed
+      // the one that had only just been opened, which left the viewer with a
+      // torn down worker, an empty text layer and no way to edit anything.
+      const previous = live.current;
+      live.current = next;
+      setDoc(next);
+      if (previous) void previous.close().catch(() => undefined);
       return next;
     },
     [],
@@ -219,10 +228,11 @@ export function useSession() {
   }, []);
 
   const close = useCallback(() => {
-    setDoc((prev) => {
-      void prev?.close().catch(() => undefined);
-      return null;
-    });
+    // Same rule as install: the teardown happens here, not in the updater.
+    const previous = live.current;
+    live.current = null;
+    setDoc(null);
+    if (previous) void previous.close().catch(() => undefined);
     past.current = [];
     future.current = [];
   }, []);

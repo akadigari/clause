@@ -35,10 +35,17 @@ export type PanelProps = {
   onShowCitation: (page: number, start: number, end: number) => void;
 };
 
-const PANELS: Record<ToolId, React.LazyExoticComponent<React.ComponentType<PanelProps>>> = {
+// The edit panel needs more than PanelProps, so it takes whatever App passes
+// through `extra`. Everything else is uniform, which is why the map is typed
+// loosely here and each panel keeps its own precise props.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPanel = React.LazyExoticComponent<React.ComponentType<any>>;
+
+const PANELS: Record<ToolId, AnyPanel> = {
   pages: lazy(() => import("./panels/PagesPanel")),
   merge: lazy(() => import("./panels/MergePanel")),
   split: lazy(() => import("./panels/SplitPanel")),
+  edit: lazy(() => import("./panels/EditPanel")),
   stamp: lazy(() => import("./panels/StampPanel")),
   sign: lazy(() => import("./panels/SignPanel")),
   redact: lazy(() => import("./panels/RedactPanel")),
@@ -52,6 +59,10 @@ const PANELS: Record<ToolId, React.LazyExoticComponent<React.ComponentType<Panel
 /** Title and one line on what the tool is for, shown above every panel. */
 const HEADINGS: Record<ToolId, { title: string; why: string }> = {
   pages: { title: "Pages", why: "Turn, reorder, remove or pull out pages." },
+  edit: {
+    title: "Edit text",
+    why: "Click a line on the page and retype it.",
+  },
   merge: { title: "Merge", why: "Put several PDFs together into one." },
   split: {
     title: "Split",
@@ -70,10 +81,14 @@ const HEADINGS: Record<ToolId, { title: string; why: string }> = {
   ask: { title: "Read", why: "Ask a question and get the exact clause back." },
 };
 
-type Props = PanelProps & { tool: ToolId };
+type Props = PanelProps & {
+  tool: ToolId;
+  /** Extra props for panels that need more than PanelProps, currently Edit. */
+  extra?: Record<string, unknown>;
+};
 
-export default function Inspector({ tool, ...panelProps }: Props) {
-  const Panel = PANELS[tool];
+export default function Inspector({ tool, extra, ...panelProps }: Props) {
+  const Panel = PANELS[tool] as unknown as React.ComponentType<Record<string, unknown>>;
   const heading = HEADINGS[tool];
 
   return (
@@ -92,7 +107,7 @@ export default function Inspector({ tool, ...panelProps }: Props) {
           </div>
         }
       >
-        <Panel {...panelProps} />
+        <Panel {...panelProps} {...(extra ?? {})} />
       </Suspense>
     </aside>
   );

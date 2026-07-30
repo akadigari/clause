@@ -37,6 +37,7 @@ and keep working, which is the shortest version of the same proof.
 | Tool | What it does |
 | --- | --- |
 | **Pages** | Turn, reorder, delete, duplicate, insert blanks, pull pages out to a new file |
+| **Edit** | Click a line of text on the page and retype it |
 | **Merge** | Any number of PDFs into one, in the order you choose |
 | **Split** | Cut anywhere, every N pages, or by ranges. Download the parts or a zip |
 | **Mark** | Text, watermarks and page numbers, anchored where you want them |
@@ -47,6 +48,26 @@ and keep working, which is the shortest version of the same proof.
 | **Fields** | Fill in a form and optionally lock the answers in |
 | **Details** | Read and clear the metadata a file carries about you |
 | **Read** | Ask a question, get the exact clause back |
+
+### Editing text, and what that really means
+
+Click any line on the page and retype it. Every line is outlined so you can see
+what is editable before you click, and you get the size, colour and background
+controls you would expect.
+
+What it actually does is cover the old words and draw new ones in their place,
+matching the position, size and baseline. That is also what the paid editors
+do, which is why they all have a "background colour" control: it is the patch.
+
+So it is honest about the consequence, on the panel and not just in a comment:
+**the old words are still in the file and can still be searched and copied.**
+Fixing a date or a name is exactly what this is for. Hiding a salary is not.
+Redact is the tool that actually removes text.
+
+Two further limits, both stated in the interface: the replacement is drawn in a
+built-in font, so on a document using an unusual typeface it looks close rather
+than identical; and nothing rewraps, so a much longer line is shrunk to fit and
+you are told when that happened.
 
 ### Redaction actually redacts
 

@@ -234,6 +234,15 @@ export const IconFlag = (p: Props) => (
   </Svg>
 );
 
+/** A cursor over a line of type: retyping what is already on the page. */
+export const IconEditText = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3 4.5h9M7.5 4.5v8" />
+    <path d="M5.5 12.5h4" />
+    <path d="M11.5 17.5l6-6 1.5 1.5-6 6H11.5v-1.5z" />
+  </Svg>
+);
+
 export const IconScissors = (p: Props) => (
   <Svg {...p}>
     <circle cx="5" cy="15" r="2.2" />

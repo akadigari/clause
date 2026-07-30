@@ -372,7 +372,11 @@ export async function allPageText(
   for (let n = 1; n <= doc.numPages; n++) {
     const page = await doc.getPage(n);
     out.push(await pageText(page));
-    page.cleanup();
+    // Deliberately no page.cleanup() here. pdf.js hands back the same page
+    // object to everyone who asks for that page number, so cleaning up a page
+    // this loop is finished with also throws away the text and glyphs the
+    // viewer is still holding. The whole document is torn down together when
+    // it closes, which is where the memory actually goes back.
     onProgress?.(n, doc.numPages);
     if (n % 8 === 0) await yieldToBrowser();
   }

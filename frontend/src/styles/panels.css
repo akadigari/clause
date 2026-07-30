@@ -628,3 +628,66 @@
   color: var(--text-2);
   line-height: 1.55;
 }
+
+/* ==========================================================================
+   edit text mode
+   --------------------------------------------------------------------------
+   Every block of text on the page gets an outline, so what can be changed is
+   visible before you click rather than something you have to discover.
+   ========================================================================== */
+
+.textbox {
+  position: absolute;
+  border: 1px dashed var(--lume-edge);
+  border-radius: 2px;
+  background: transparent;
+  cursor: text;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.textbox:hover {
+  border-color: var(--lume);
+  background: var(--lume-wash);
+}
+
+.textbox.on {
+  border-style: solid;
+  border-color: var(--lume);
+  background: transparent;
+}
+
+/* A block already retyped, so you can see what you have changed at a glance
+   without opening each one again. */
+.textbox.done {
+  border-style: solid;
+  border-color: var(--true);
+  background: var(--true-wash);
+}
+
+.textbox.done:hover {
+  border-color: var(--true);
+  background: color-mix(in srgb, var(--true) 22%, transparent);
+}
+
+/* Sits exactly over the words it replaces, at their size, so the page shows
+   you what you are going to get rather than a form somewhere else. */
+.textbox-input {
+  position: absolute;
+  margin: 0;
+  padding: 0 1px;
+  border: 1px solid var(--lume);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--sans);
+  resize: none;
+  overflow: hidden;
+  box-shadow: 0 0 0 3px var(--lume-wash);
+  z-index: 8;
+}
+
+.textbox-input:focus {
+  outline: none;
+}

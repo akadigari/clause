@@ -285,7 +285,8 @@ function Thumb({
         handle = renderPage(page, target, THUMB_ZOOM, 1.5);
         await handle.done;
         if (!cancelled) setDrawn(true);
-        page.cleanup();
+        // No page.cleanup(). The stage is showing this same page object, and
+        // cleaning it up here wipes the text layer out from under it.
       } catch (err) {
         if (!isCancelled(err)) console.warn("[clause] thumbnail failed", err);
       }

@@ -10,6 +10,7 @@ import {
   IconAsk,
   IconCompress,
   IconConvert,
+  IconEditText,
   IconForm,
   IconMerge,
   IconPages,
@@ -24,6 +25,7 @@ export type ToolId =
   | "pages"
   | "merge"
   | "split"
+  | "edit"
   | "stamp"
   | "sign"
   | "redact"
@@ -48,6 +50,7 @@ const GROUPS: Entry[][] = [
     { id: "split", label: "Split", Icon: IconSplit, needsDoc: true },
   ],
   [
+    { id: "edit", label: "Edit", Icon: IconEditText, needsDoc: true },
     { id: "stamp", label: "Mark", Icon: IconStamp, needsDoc: true },
     { id: "sign", label: "Sign", Icon: IconSign, needsDoc: true },
     { id: "redact", label: "Redact", Icon: IconRedact, needsDoc: true },
