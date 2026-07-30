@@ -2,7 +2,11 @@
 
 **A PDF workbench that never uploads your file.**
 
-**[clause-mauve.vercel.app](https://clause-mauve.vercel.app)**
+**[clause-mauve.vercel.app](https://clause-mauve.vercel.app)** or
+**[akadigari.github.io/clause](https://akadigari.github.io/clause/)**
+
+The same site on two hosts. It is static, so either one can serve it and the
+other is there if one has an outage.
 
 Merge, split, turn, sign, redact, shrink and convert PDFs, and ask questions
 about what they say. All of it runs in the browser tab. There is no account,
