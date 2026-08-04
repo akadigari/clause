@@ -115,7 +115,7 @@ export default function App() {
     if (tool === "edit") {
       return {
         kind: "edit",
-        hint: "Click any line to retype it. The old words are covered, not removed.",
+        hint: "Click any line to retype it. The old words come out of the file.",
         open,
         doneKeys: pending.filter((p) => p.text !== p.original).map((p) => p.key),
         onPick: pickLine,

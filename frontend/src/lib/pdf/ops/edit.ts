@@ -1,28 +1,37 @@
 /**
  * Changing words that are already printed on a page.
  *
- * Read this part before trusting it with anything that matters.
+ * A PDF has no paragraph you can retype. A page is a list of drawing
+ * instructions and a word is a set of glyphs pinned at fixed coordinates. So
+ * changing text means two different things depending on whether the old glyphs
+ * can be found and taken out, and this file does both and tells the caller
+ * which one happened.
  *
- * This does NOT edit the text inside the file. A PDF has no paragraph you can
- * retype. A page is a list of drawing instructions, and a word is a set of
- * glyphs pinned at fixed coordinates. What happens here is that a small filled
- * rectangle gets painted over the run you picked, and the new words are drawn
- * on top of it at the same baseline the old ones sat on.
+ * FIRST it tries to cut. Pass `original` on an edit and excise.ts replays the
+ * page's instructions, finds the run that starts exactly where that one does,
+ * and empties the string it draws. Then it reopens the result and checks that
+ * the words really are gone and that nothing else on the page moved. Only if
+ * both hold does the cut count. Those runs come back in `removed`, and for
+ * them the file genuinely stops saying what it said.
  *
- * The old glyphs are still in the content stream underneath that rectangle.
- * They are still returned by every text extractor, every search box and every
- * copy and paste, including this app's own. The page LOOKS changed and the
- * file still says what it said before.
+ * WHEN THE CUT IS REFUSED it falls back to the old behaviour: paint a small
+ * filled rectangle over the run and draw the new words on top. The old glyphs
+ * are still underneath, still returned by every text extractor, search box and
+ * copy-paste. Those runs come back in `covered`, and **whenever `covered` is
+ * above zero the screen has to say so**, using COVER_NOT_REMOVED below.
  *
- * That is fine for what this is for: fixing a name, a date, a wrong figure, a
- * typo in a heading. It is NOT a way to take sensitive information out of a
- * document, and nothing shown to the user may suggest that it is. Redact is
- * the tool for that. Redact rasterizes the page, so the words stop existing
- * instead of stopping being visible, and redact.ts spells out what that costs.
+ * The cut refuses more often than you would guess, and refusing is the right
+ * behaviour every time. Two runs starting in the same place cannot be told
+ * apart. A run that begins wherever the previous one happened to stop has no
+ * position of its own to match, and emptying the one before it would slide it
+ * across the page. Getting either wrong damages a document silently, which is
+ * far worse than leaving the old words in it and admitting that is what
+ * happened.
  *
- * A comment cannot reach the person using the app, so the sentence that has to
- * reach them is exported as COVER_NOT_REMOVED below. Any screen that offers
- * this has to show it.
+ * Neither path is a way to hide sensitive information on its own, because you
+ * cannot tell by looking which one you got. Redact is still the tool for that:
+ * it rasterizes the page, so the words stop existing rather than stopping being
+ * findable, and redact.ts spells out what that costs.
  *
  * Two more limits, both of which the reader can see:
  *
@@ -39,6 +48,7 @@
  * allowed to change that file.
  */
 
+import { exciseTextRun } from "./excise";
 import {
   breathe,
   checkSize,
@@ -109,12 +119,34 @@ export type TextEdit = {
   /** Horizontal squeeze from the original run, so a replacement of similar
    *  length occupies similar width. */
   squeeze?: number;
+  /**
+   * What the run says now.
+   *
+   * Supply it and this will first try to cut those words out of the content
+   * stream, so the file stops saying them rather than stopping showing them.
+   * The cut has to prove it removed the right words and moved nothing else, and
+   * anything short of that falls back to painting over. Leave it out and the
+   * cut is never attempted, because there would be no way to confirm the right
+   * run was found.
+   */
+  original?: string;
 };
 
 export type EditResult = {
   bytes: Uint8Array;
   /** Runs that were replaced. */
   applied: number;
+  /**
+   * Runs whose old words were taken out of the content stream for good, so no
+   * extractor can find them any more.
+   */
+  removed: number;
+  /**
+   * Runs that had to be painted over instead, because taking them out could
+   * not be proved safe. For these, and only these, the old text is still in
+   * the file. If this is above zero the screen has to say so.
+   */
+  covered: number;
   /** Warnings the UI must show, e.g. text wider than the space it replaces. */
   warnings: string[];
 };
@@ -148,7 +180,26 @@ const MIN_SHRINK = 0.6;
  * not told this will believe the old number is gone. It is not gone.
  */
 export const COVER_NOT_REMOVED =
-  "This paints over the old words and writes new ones on top. The old text is still inside the file and can still be searched, copied and extracted. To take words out of a document, use Redact.";
+  "Some of these could only be painted over. For those runs the old text is still inside the file and can still be searched, copied and extracted. To take words out of a document for certain, use Redact.";
+
+/**
+ * What to say when every run really was cut out.
+ *
+ * This one is allowed to say the words are gone, because in this case they are,
+ * and the cut proved it by reading the file back before returning. Only show it
+ * when `covered` is zero.
+ */
+export const OLD_TEXT_REMOVED =
+  "The old words were taken out of the file, not just covered up, so they cannot be searched or copied out any more.";
+
+/**
+ * Names one edit, so the cutting pass and the drawing pass agree on which run
+ * they are talking about. Rounded, because these are floats off a viewer.
+ */
+function keyOf(edit: TextEdit): string {
+  const r = edit.rect;
+  return `${edit.page}:${Math.round(r.x)}:${Math.round(r.y)}`;
+}
 
 /** Edits per pause, so a long batch does not freeze the tab. */
 const BREATHE_EVERY = 16;
@@ -529,7 +580,42 @@ export async function replaceText(
     );
   }
 
-  const doc = await loadPdf(bytes);
+  // Cut first, draw second.
+  //
+  // The cut works by replaying the page's instructions and matching a run by
+  // where it starts. Drawing the replacements first would put new words on the
+  // page for it to match against, so the order here is not a preference.
+  const cutKeys = new Set<string>();
+  let working = bytes;
+  {
+    let seen = 0;
+    for (const edit of edits) {
+      const original = typeof edit.original === "string" ? edit.original : "";
+      if (original.trim() === "") continue;
+      const rect = normalizeRect(edit.rect);
+      if (!(rect.width > 0) || !(rect.height > 0)) continue;
+
+      // Counted and reported only once a cut is actually going to be tried.
+      // Reporting a step for work that is about to be skipped makes the bar
+      // race to the end and then sit still through the slow part.
+      seen += 1;
+      onProgress?.(seen, edits.length, "Taking the old words out");
+
+      const outcome = await exciseTextRun(working, {
+        page: edit.page,
+        rect,
+        baseline: baselineDrop(edit, rect),
+        text: original,
+      });
+      if (outcome.ok) {
+        working = outcome.bytes;
+        cutKeys.add(keyOf(edit));
+      }
+      if (seen % BREATHE_EVERY === 0) await breathe();
+    }
+  }
+
+  const doc = await loadPdf(working);
   const grouped = groupByPage(edits, doc.getPageCount());
 
   const { rgb, degrees, pushGraphicsState, popGraphicsState, setCharacterSqueeze } =
@@ -537,6 +623,8 @@ export async function replaceText(
   const fonts = new Map<string, PDFFont>();
   const warnings: string[] = [];
   let applied = 0;
+  let removed = 0;
+  let covered = 0;
   let done = 0;
 
   for (const [index, group] of grouped) {
@@ -558,6 +646,14 @@ export async function replaceText(
         continue;
       }
 
+      // A run whose words were cut out needs nothing painted over it: there is
+      // nothing left there to hide. Skipping the patch is what lets a
+      // correction sit on a coloured background or an image without a white
+      // box around it, which the covering path could never do.
+      const wasCut = cutKeys.has(keyOf(edit));
+      if (wasCut) removed += 1;
+      else covered += 1;
+
       const cover = parseHexColor(edit.background ?? "#ffffff");
       // A quarter turn keeps an upright rectangle upright, it only swaps which
       // side is the width, and viewRectToUser has already done that swap. So
@@ -571,13 +667,15 @@ export async function replaceText(
         },
         box,
       );
-      page.drawRectangle({
-        x: patch.x,
-        y: patch.y,
-        width: patch.width,
-        height: patch.height,
-        color: rgb(cover.r, cover.g, cover.b),
-      });
+      if (!wasCut) {
+        page.drawRectangle({
+          x: patch.x,
+          y: patch.y,
+          width: patch.width,
+          height: patch.height,
+          color: rgb(cover.r, cover.g, cover.b),
+        });
+      }
       applied += 1;
 
       const text = cleanForDrawing(typeof edit.text === "string" ? edit.text : "");
@@ -660,5 +758,15 @@ export async function replaceText(
     }
   }
 
-  return { bytes: await savePdf(doc), applied, warnings };
+  // COVER_NOT_REMOVED deliberately does NOT go in here. A warning means
+  // something about the edit the person made needs their attention, and a
+  // screen that shows warnings would start showing a standing disclaimer on
+  // every run. `covered` is the fact; the UI decides what to say about it.
+  return {
+    bytes: await savePdf(doc),
+    applied,
+    removed,
+    covered,
+    warnings,
+  };
 }

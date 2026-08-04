@@ -12,7 +12,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import type { PanelProps } from "../Inspector";
 import type { OpenEdit } from "../Stage";
-import { COVER_NOT_REMOVED, type TextEdit } from "../../lib/pdf/ops/edit";
+import { COVER_NOT_REMOVED, OLD_TEXT_REMOVED, type TextEdit } from "../../lib/pdf/ops/edit";
 import { plural } from "../../lib/format";
 import { IconCheck, IconClose } from "../Icons";
 
@@ -43,6 +43,7 @@ export default function EditPanel({
   onClearAll,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const [outcome, setOutcome] = useState<{ removed: number; covered: number } | null>(null);
 
   const changed = useMemo(
     () => pending.filter((p) => p.text !== p.original),
@@ -57,6 +58,9 @@ export default function EditPanel({
       rect: p.rect,
       baseline: p.baseline,
       text: p.text,
+      // Without this the cut is never tried, because there would be no way to
+      // confirm the run found is the run the person clicked.
+      original: p.original,
       fontSize: p.fontSize,
       color: p.color,
       background: p.background,
@@ -69,6 +73,11 @@ export default function EditPanel({
         const { replaceText } = await import("../../lib/pdf/ops/edit");
         const result = await replaceText(bytes, edits, progress);
         for (const warning of result.warnings) session.say(warning, "bad");
+        // Which of the two things happened is the whole point, so it is said
+        // out loud rather than left for the user to assume.
+        if (result.covered > 0) session.say(COVER_NOT_REMOVED, "bad");
+        else if (result.removed > 0) session.say(OLD_TEXT_REMOVED);
+        setOutcome({ removed: result.removed, covered: result.covered });
         return result.bytes;
       })
       .finally(() => {
@@ -196,13 +205,30 @@ export default function EditPanel({
           </div>
         )}
 
-        <div className="tradeoff">
-          <b>This covers the old words, it does not remove them.</b>{" "}
-          {COVER_NOT_REMOVED.replace(
-            "This paints over the old words and writes new ones on top. ",
-            "",
-          )}
-        </div>
+        {outcome ? (
+          outcome.covered > 0 ? (
+            <div className="tradeoff">
+              <b>
+                {outcome.removed > 0
+                  ? `${outcome.removed} taken out, ${outcome.covered} only painted over.`
+                  : `${outcome.covered} could only be painted over.`}
+              </b>{" "}
+              {COVER_NOT_REMOVED}
+            </div>
+          ) : (
+            <div className="tradeoff">
+              <b>Taken out of the file.</b> {OLD_TEXT_REMOVED}
+            </div>
+          )
+        ) : (
+          <div className="tradeoff">
+            <b>This tries to take the old words out of the file.</b> When it can
+            do that and prove nothing else moved, the words are gone for good.
+            When it cannot, it paints over them instead and says so, and then
+            the old text is still in the file. Either way you will be told which
+            one happened.
+          </div>
+        )}
 
         <p className="note">
           The replacement is drawn in a built-in font, so on a document using an
