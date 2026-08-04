@@ -172,25 +172,14 @@ const COVER_PAD = 0.5;
 const MIN_SHRINK = 0.6;
 
 /**
- * The sentence the UI has to put in front of anyone using this.
+ * The two sentences the UI has to put in front of anyone using this.
  *
- * It lives here rather than in the panel so there is one wording, so it cannot
- * drift away from what the code does, and so a test can hold it to the same
- * promise the module header makes. A user who changes a salary figure and is
- * not told this will believe the old number is gone. It is not gone.
+ * They are defined in `edit.messages.ts` and re-exported here. The panel shows
+ * them before anything is applied, so it imports them from that file directly
+ * and keeps this module, pdf-lib and the cutter out of its own chunk. See the
+ * header of `edit.messages.ts`.
  */
-export const COVER_NOT_REMOVED =
-  "Some of these could only be painted over. For those runs the old text is still inside the file and can still be searched, copied and extracted. To take words out of a document for certain, use Redact.";
-
-/**
- * What to say when every run really was cut out.
- *
- * This one is allowed to say the words are gone, because in this case they are,
- * and the cut proved it by reading the file back before returning. Only show it
- * when `covered` is zero.
- */
-export const OLD_TEXT_REMOVED =
-  "The old words were taken out of the file, not just covered up, so they cannot be searched or copied out any more.";
+export { COVER_NOT_REMOVED, OLD_TEXT_REMOVED } from "./edit.messages";
 
 /**
  * Names one edit, so the cutting pass and the drawing pass agree on which run

@@ -12,7 +12,11 @@ import { useCallback, useMemo, useState } from "react";
 
 import type { PanelProps } from "../Inspector";
 import type { OpenEdit } from "../Stage";
-import { COVER_NOT_REMOVED, OLD_TEXT_REMOVED, type TextEdit } from "../../lib/pdf/ops/edit";
+// The strings come from their own file and the type is erased at build time, so
+// neither one pulls edit.ts (and pdf-lib, and the cutter) into this chunk. That
+// module is loaded lazily on the first apply, below.
+import { COVER_NOT_REMOVED, OLD_TEXT_REMOVED } from "../../lib/pdf/ops/edit.messages";
+import type { TextEdit } from "../../lib/pdf/ops/edit";
 import { plural } from "../../lib/format";
 import { IconCheck, IconClose } from "../Icons";
 
